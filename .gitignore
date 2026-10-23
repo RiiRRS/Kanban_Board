@@ -1,0 +1,15 @@
+node_modules/
+data/*.db
+data/*.db-*
+.DS_Store
+.vscode/
+*.log
+jar.txt
+e.txt
+m.txt
+
+# documenti interni del gruppo (piani, specifiche, istruzioni)
+docs/
+PLAN.md
+SPECIFICHE.md
+specifiche_progetto_kanban.md

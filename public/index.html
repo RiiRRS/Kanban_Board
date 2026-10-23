@@ -1,0 +1,25 @@
+<!doctype html>
+<!-- SEGNAPOSTO -->
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kanban Board</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+  </head>
+  <body>
+    <header id="app-header">
+      <span id="current-user"></span>
+      <button id="new-task-button" type="button">+ Nuova attività</button>
+      <input id="search-input" type="search" placeholder="Cerca…" />
+      <div id="filters"></div>
+      <button id="theme-toggle" type="button">Tema</button>
+      <button id="logout-button" type="button">Esci</button>
+    </header>
+    <div id="status-banner" hidden></div>
+    <main id="board"></main>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
