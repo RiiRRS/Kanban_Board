@@ -20,6 +20,15 @@ import {
   wouldCreateCycle,
 } from './validation.js';
 import { STATUSES } from './constants.js';
+import {
+  getCache,
+  setCache,
+  removeCache,
+  clearUserCache,
+  tasksKey,
+  commentsKey,
+  rememberCommentsTask,
+} from './cache.js';
 
 export const USE_STUBS = true;
 
@@ -33,27 +42,23 @@ export class ApiError extends Error {
 }
 
 export async function register(username, password) {
-  return USE_STUBS
-    ? stub.register(username, password)
-    : request('POST', '/api/register', { username, password });
+  return USE_STUBS ? stub.register(username, password) : real.register(username, password);
 }
 
 export async function login(username, password) {
-  return USE_STUBS
-    ? stub.login(username, password)
-    : request('POST', '/api/login', { username, password });
+  return USE_STUBS ? stub.login(username, password) : real.login(username, password);
 }
 
 export async function logout() {
-  return USE_STUBS ? stub.logout() : request('POST', '/api/logout');
+  return USE_STUBS ? stub.logout() : real.logout();
 }
 
 export async function getMe() {
-  return USE_STUBS ? stub.getMe() : request('GET', '/api/me');
+  return USE_STUBS ? stub.getMe() : real.getMe();
 }
 
 export async function getTasks({ onCache } = {}) {
-  return USE_STUBS ? stub.getTasks() : authed('GET', '/api/tasks');
+  return USE_STUBS ? stub.getTasks() : real.getTasks(onCache);
 }
 
 export async function createTask(input) {
@@ -75,13 +80,11 @@ export async function deleteTask(id) {
 }
 
 export async function getComments(taskId, { onCache } = {}) {
-  return USE_STUBS ? stub.getComments(taskId) : authed('GET', `/api/tasks/${taskId}/comments`);
+  return USE_STUBS ? stub.getComments(taskId) : real.getComments(taskId, onCache);
 }
 
 export async function addComment(taskId, text) {
-  return USE_STUBS
-    ? stub.addComment(taskId, text)
-    : authed('POST', `/api/tasks/${taskId}/comments`, { text });
+  return USE_STUBS ? stub.addComment(taskId, text) : real.addComment(taskId, text);
 }
 
 // solo debug: riporta i dati finti allo stato iniziale
@@ -90,7 +93,7 @@ export async function resetStubs() {
 }
 
 // ---------------------------------------------------------------------------
-// Server vero (versione minima, la cache arriva dopo)
+// Server vero
 // ---------------------------------------------------------------------------
 
 async function request(method, path, body) {
@@ -117,15 +120,101 @@ async function request(method, path, body) {
   return data;
 }
 
-// rotte protette: su 401 manda al login
+// rotte protette: su 401 svuota la cache e manda al login
 async function authed(method, path, body) {
   try {
     return await request(method, path, body);
   } catch (err) {
-    if (err.status === 401) location.replace('login.html');
+    if (err.status === 401) {
+      clearUserCache();
+      location.replace('login.html');
+    }
     throw err;
   }
 }
+
+// id dell'utente loggato, preso dalla cache di getMe/login (serve per le chiavi della cache)
+const cachedUserId = () => getCache('me')?.id ?? null;
+
+const real = {
+  async register(username, password) {
+    const user = await request('POST', '/api/register', { username, password });
+    setCache('me', user);
+    return user;
+  },
+
+  async login(username, password) {
+    const user = await request('POST', '/api/login', { username, password });
+    setCache('me', user);
+    return user;
+  },
+
+  async logout() {
+    try {
+      await request('POST', '/api/logout');
+    } catch {
+      // senza rete si esce lo stesso: la sessione scade da sola
+    }
+    clearUserCache();
+  },
+
+  async getMe() {
+    try {
+      const user = await request('GET', '/api/me');
+      setCache('me', user);
+      return user;
+    } catch (err) {
+      if (err.status === 401) {
+        removeCache('me');
+        return null;
+      }
+      // offline: va bene l'utente in cache
+      const cached = err.status === 0 ? getCache('me') : null;
+      if (cached) return cached;
+      throw err;
+    }
+  },
+
+  async getTasks(onCache) {
+    const userId = cachedUserId();
+    const key = userId == null ? null : tasksKey(userId);
+    if (key && typeof onCache === 'function') {
+      const cached = getCache(key);
+      if (Array.isArray(cached?.items)) onCache(cached.items);
+    }
+    const tasks = await authed('GET', '/api/tasks');
+    if (key) setCache(key, { savedAt: Date.now(), items: tasks });
+    return tasks;
+  },
+
+  async getComments(taskId, onCache) {
+    const userId = cachedUserId();
+    const key = userId == null ? null : commentsKey(userId, taskId);
+    if (key && typeof onCache === 'function') {
+      const cached = getCache(key);
+      if (Array.isArray(cached?.items)) onCache(cached.items);
+    }
+    const comments = await authed('GET', `/api/tasks/${taskId}/comments`);
+    if (key) {
+      setCache(key, { savedAt: Date.now(), items: comments });
+      rememberCommentsTask(userId, taskId);
+    }
+    return comments;
+  },
+
+  async addComment(taskId, text) {
+    const comment = await authed('POST', `/api/tasks/${taskId}/comments`, { text });
+    const userId = cachedUserId();
+    if (userId != null) {
+      const key = commentsKey(userId, taskId);
+      const cached = getCache(key);
+      if (Array.isArray(cached?.items)) {
+        setCache(key, { savedAt: Date.now(), items: [...cached.items, comment] });
+      }
+    }
+    return comment;
+  },
+};
 
 // ---------------------------------------------------------------------------
 // Stub: dati finti in localStorage, stesse regole del server
