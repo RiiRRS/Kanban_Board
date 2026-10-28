@@ -6,7 +6,7 @@ const MOVE_TOLERANCE = 8;
 const EDGE_SIZE = 40;
 const EDGE_SCROLL_STEP = 10;
 
-const CARD_SELECTOR = '.card:not(.card--skeleton)';
+const CARD_SELECTOR = '.card:not(.card--skeleton):not(.card--static)';
 const LIST_SELECTOR = '.column__list';
 const IGNORED_SELECTOR = '.card__menu-button, .card__menu';
 
@@ -31,7 +31,7 @@ export function enableDragAndDrop(board, { onDrop } = {}) {
   const indicator = document.createElement('div');
   indicator.className = 'drop-indicator';
 
-  let dragged = null; // { card, id, fromStatus, fromPosition }
+  let dragged = null; // { card, id, fromColumn, fromPosition }
   let overList = null;
   let justDragged = false;
   let lastPointerType = 'mouse';
@@ -44,7 +44,7 @@ export function enableDragAndDrop(board, { onDrop } = {}) {
     dragged = {
       card,
       id: Number(card.dataset.taskId),
-      fromStatus: list.dataset.status,
+      fromColumn: list.dataset.columnId,
       fromPosition: [...list.querySelectorAll('.card')].indexOf(card),
     };
     document.body.classList.add('is-dragging');
@@ -76,18 +76,18 @@ export function enableDragAndDrop(board, { onDrop } = {}) {
   // sposta subito la card nella pagina e avvisa chi ha chiamato
   function finish(list, y) {
     if (!dragged || !list) return false;
-    const { card, id, fromStatus, fromPosition } = dragged;
-    const status = list.dataset.status;
+    const { card, id, fromColumn, fromPosition } = dragged;
+    const columnId = list.dataset.columnId;
     // prima di cleanup(): la card trascinata deve ancora essere esclusa dal calcolo
     const after = getCardAfter(list, y);
     const position = getPosition(list, after);
     cleanup();
 
-    if (status === fromStatus && position === fromPosition) return true;
+    if (columnId === fromColumn && position === fromPosition) return true;
     list.querySelector('.column__empty')?.remove();
     list.insertBefore(card, after);
     // anche l'id della card successiva: con i filtri attivi l'indice visibile non basta
-    onDrop?.(id, status, position, after ? Number(after.dataset.taskId) : null);
+    onDrop?.(id, Number(columnId), position, after ? Number(after.dataset.taskId) : null);
     return true;
   }
 

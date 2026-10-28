@@ -1,12 +1,15 @@
 import { PRIORITIES, PRIORITY_LABELS } from './constants.js';
 import { isOverdue, isToday } from './format.js';
+import { el } from './dom.js';
 
 const DEBOUNCE_MS = 200;
-const state = { text: '', priority: '', urgentOnly: false };
+const state = { text: '', priority: '', labelId: '', urgentOnly: false, mineOnly: false };
 
 let searchInput = null;
 let onSearchInput = null;
 let suggestions = null;
+let labelSelect = null;
+let currentUserId = null;
 
 // ignora maiuscole e accenti
 function normalize(s) {
@@ -17,24 +20,22 @@ function normalize(s) {
 }
 
 function isUrgent(task) {
-  return isOverdue(task) || (isToday(task.date) && task.status !== 'done');
+  return isOverdue(task) || (isToday(task.date) && !task.isDone);
 }
 
 function hasActiveFilters() {
-  return state.text !== '' || state.priority !== '' || state.urgentOnly;
+  return (
+    state.text !== '' ||
+    state.priority !== '' ||
+    state.labelId !== '' ||
+    state.urgentOnly ||
+    state.mineOnly
+  );
 }
 
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
-
-export function initFilters(container, onChange) {
-  state.text = '';
-  state.priority = '';
-  state.urgentOnly = false;
+export function initFilters(container, onChange, { userId } = {}) {
+  currentUserId = userId ?? null;
+  Object.assign(state, { text: '', priority: '', labelId: '', urgentOnly: false, mineOnly: false });
 
   const priorityLabel = el('label', 'visually-hidden', 'Filtra per priorità');
   priorityLabel.htmlFor = 'filter-priority';
@@ -43,11 +44,22 @@ export function initFilters(container, onChange) {
   priority.append(new Option('Tutte le priorità', ''));
   for (const p of PRIORITIES) priority.append(new Option(PRIORITY_LABELS[p], p));
 
-  const urgentLabel = el('label', 'app-header__check');
-  const urgent = el('input');
-  urgent.type = 'checkbox';
-  urgent.id = 'filter-urgent';
-  urgentLabel.append(urgent, el('span', null, 'Solo urgenti'));
+  const labelLabel = el('label', 'visually-hidden', 'Filtra per etichetta');
+  labelLabel.htmlFor = 'filter-label';
+  labelSelect = el('select', 'select');
+  labelSelect.id = 'filter-label';
+  labelSelect.append(new Option('Tutte le etichette', ''));
+
+  const check = (id, text) => {
+    const label = el('label', 'app-header__check');
+    const input = el('input');
+    input.type = 'checkbox';
+    input.id = id;
+    label.append(input, el('span', null, text));
+    return { label, input };
+  };
+  const mine = check('filter-mine', 'Solo miei');
+  const urgent = check('filter-urgent', 'Solo urgenti');
 
   const reset = el('button', 'btn btn--ghost', 'Azzera filtri');
   reset.type = 'button';
@@ -62,8 +74,16 @@ export function initFilters(container, onChange) {
     state.priority = priority.value;
     refresh();
   });
-  urgent.addEventListener('change', () => {
-    state.urgentOnly = urgent.checked;
+  labelSelect.addEventListener('change', () => {
+    state.labelId = labelSelect.value;
+    refresh();
+  });
+  mine.input.addEventListener('change', () => {
+    state.mineOnly = mine.input.checked;
+    refresh();
+  });
+  urgent.input.addEventListener('change', () => {
+    state.urgentOnly = urgent.input.checked;
     refresh();
   });
 
@@ -90,16 +110,39 @@ export function initFilters(container, onChange) {
 
   reset.addEventListener('click', () => {
     clearTimeout(timer);
-    state.text = '';
-    state.priority = '';
-    state.urgentOnly = false;
+    Object.assign(state, {
+      text: '',
+      priority: '',
+      labelId: '',
+      urgentOnly: false,
+      mineOnly: false,
+    });
     searchInput.value = '';
     priority.value = '';
-    urgent.checked = false;
+    labelSelect.value = '';
+    mine.input.checked = false;
+    urgent.input.checked = false;
     refresh();
   });
 
-  container.replaceChildren(priorityLabel, priority, urgentLabel, reset);
+  container.replaceChildren(
+    priorityLabel,
+    priority,
+    labelLabel,
+    labelSelect,
+    mine.label,
+    urgent.label,
+    reset,
+  );
+}
+
+// le etichette cambiano da una board all'altra: il filtro scelto vale solo se esiste ancora
+export function setFilterLabels(labels) {
+  if (!labelSelect) return;
+  labelSelect.replaceChildren(new Option('Tutte le etichette', ''));
+  for (const l of labels) labelSelect.append(new Option(l.name, String(l.id)));
+  if (!labels.some((l) => String(l.id) === state.labelId)) state.labelId = '';
+  labelSelect.value = state.labelId;
 }
 
 // ritorna un nuovo array con tutti i filtri applicati insieme
@@ -107,8 +150,11 @@ export function applyFilters(tasks) {
   return tasks.filter((task) => {
     if (state.priority && task.priority !== state.priority) return false;
     if (state.urgentOnly && !isUrgent(task)) return false;
+    if (state.mineOnly && !task.assignees.some((a) => a.id === currentUserId)) return false;
+    if (state.labelId && !task.labels.some((l) => String(l.id) === state.labelId)) return false;
     if (state.text) {
-      const haystack = normalize(`${task.title} ${task.description}`);
+      const labels = task.labels.map((l) => l.name).join(' ');
+      const haystack = normalize(`${task.title} ${task.description} ${labels}`);
       if (!haystack.includes(state.text)) return false;
     }
     return true;

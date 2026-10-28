@@ -1,7 +1,7 @@
 // Regole di validazione condivise da browser e server.
 // Funzioni pure: niente document, window o localStorage, perché le importa anche il server.
 
-import { STATUSES, PRIORITIES, LIMITS, DEFAULT_COLOR } from './constants.js';
+import { PRIORITIES, RECURRENCES, LIMITS, DEFAULT_COLOR } from './constants.js';
 
 const USERNAME_RE = /^[A-Za-z0-9_]+$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -36,24 +36,49 @@ export function validateCommentText(text) {
   return null;
 }
 
+export const isValidColor = (color) => typeof color === 'string' && COLOR_RE.test(color);
+
+// nome di board, colonna, etichetta o voce di checklist: 1..max caratteri
+export function validateName(value, max, what) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return `${what}: il nome è obbligatorio`;
+  if (text.length > max) return `${what}: al massimo ${max} caratteri`;
+  return null;
+}
+
+// numero intero o null → intero ≥ 0 (minuti); NaN se non valido
+function toMinutes(value) {
+  if (value === '' || value == null) return null;
+  const n = Number(value);
+  return Number.isInteger(n) ? n : NaN;
+}
+
+const toIdList = (value) =>
+  Array.isArray(value) ? [...new Set(value.map(Number))].filter((n) => n !== 0) : [];
+
 // accetta qualunque cosa (anche dati sporchi dal body HTTP) e ritorna un TaskInput pulito
 export function normalizeTaskInput(raw = {}) {
   raw = raw && typeof raw === 'object' ? raw : {};
   return {
     title: typeof raw.title === 'string' ? raw.title.trim() : '',
     description: typeof raw.description === 'string' ? raw.description.trim() : '',
-    status: raw.status ?? 'todo',
+    columnId: raw.columnId == null || raw.columnId === '' ? null : Number(raw.columnId),
     date: raw.date ?? '',
     startTime: raw.startTime ?? '',
     endTime: raw.endTime ?? '',
     color: raw.color || DEFAULT_COLOR,
     priority: raw.priority ?? 'medium',
     parentId: raw.parentId === '' || raw.parentId == null ? null : Number(raw.parentId),
+    assigneeIds: toIdList(raw.assigneeIds),
+    labelIds: toIdList(raw.labelIds),
+    estimateMin: toMinutes(raw.estimateMin),
+    spentMin: toMinutes(raw.spentMin) ?? 0,
+    recurrence: raw.recurrence ?? 'none',
   };
 }
 
 // la data deve esistere davvero: '2026-02-30' non passa
-function isValidDate(date) {
+export function isValidDate(date) {
   if (typeof date !== 'string' || !DATE_RE.test(date)) return false;
   const d = new Date(date + 'T00:00:00Z');
   return !isNaN(d) && d.toISOString().slice(0, 10) === date;
@@ -61,12 +86,29 @@ function isValidDate(date) {
 
 const isValidTime = (time) => typeof time === 'string' && TIME_RE.test(time);
 
+const isId = (n) => Number.isInteger(n) && n > 0;
+const isMinutes = (n) => Number.isInteger(n) && n >= 0 && n <= LIMITS.minutesMax;
+
 // ritorna { campo: messaggio } — {} se va tutto bene.
 // L'ordine dei campi conta: il server segnala il primo errore trovato.
 export function validateTaskInput(input) {
   const errors = {};
-  const { title, description, status, date, startTime, endTime, priority, color, parentId } =
-    input ?? {};
+  const {
+    title,
+    description,
+    columnId,
+    date,
+    startTime,
+    endTime,
+    priority,
+    color,
+    parentId,
+    assigneeIds,
+    labelIds,
+    estimateMin,
+    spentMin,
+    recurrence,
+  } = input ?? {};
 
   if (typeof title !== 'string' || !title.trim()) {
     errors.title = 'Il titolo è obbligatorio';
@@ -75,10 +117,10 @@ export function validateTaskInput(input) {
   }
 
   if (typeof description !== 'string' || description.length > LIMITS.descriptionMax) {
-    errors.description = 'La descrizione può avere al massimo 2000 caratteri';
+    errors.description = `La descrizione può avere al massimo ${LIMITS.descriptionMax} caratteri`;
   }
 
-  if (!STATUSES.includes(status)) errors.status = 'Stato non valido';
+  if (!isId(columnId)) errors.columnId = 'Colonna non valida';
 
   if (!isValidDate(date)) errors.date = 'Data non valida';
 
@@ -92,18 +134,45 @@ export function validateTaskInput(input) {
 
   if (!PRIORITIES.includes(priority)) errors.priority = 'Priorità non valida';
 
-  if (typeof color !== 'string' || !COLOR_RE.test(color)) errors.color = 'Colore non valido';
+  if (!isValidColor(color)) errors.color = 'Colore non valido';
 
-  if (parentId !== null && !(Number.isInteger(parentId) && parentId > 0)) {
-    errors.parentId = 'Attività genitore non trovata';
+  if (parentId !== null && !isId(parentId)) errors.parentId = 'Attività genitore non trovata';
+
+  if (!Array.isArray(assigneeIds) || !assigneeIds.every(isId)) {
+    errors.assigneeIds = 'Assegnatari non validi';
+  } else if (assigneeIds.length > LIMITS.assigneesMax) {
+    errors.assigneeIds = `Al massimo ${LIMITS.assigneesMax} assegnatari`;
   }
+
+  if (!Array.isArray(labelIds) || !labelIds.every(isId)) {
+    errors.labelIds = 'Etichette non valide';
+  } else if (labelIds.length > LIMITS.labelsMax) {
+    errors.labelIds = `Al massimo ${LIMITS.labelsMax} etichette`;
+  }
+
+  if (estimateMin !== null && !isMinutes(estimateMin)) errors.estimateMin = 'Stima non valida';
+  if (!isMinutes(spentMin)) errors.spentMin = 'Tempo non valido';
+
+  if (!RECURRENCES.includes(recurrence)) errors.recurrence = 'Ripetizione non valida';
 
   return errors;
 }
 
-// un'altra attività (id diverso) con stessa data e stessa ora di inizio
-export function findTimeConflict(tasks, { id = null, date, startTime }) {
-  return tasks.find((t) => t.id !== id && t.date === date && t.startTime === startTime) ?? null;
+// Attività che si sovrappongono a quella indicata: stesso giorno, orari che si incrociano e
+// almeno un assegnatario in comune. Contano solo le attività ancora aperte (non fatte, non in
+// archivio). Senza assegnatari nessuno risulta doppiamente impegnato, quindi non c'è conflitto.
+export function findTimeConflicts(tasks, { id = null, date, startTime, endTime, assigneeIds }) {
+  if (!assigneeIds?.length) return [];
+  return tasks.filter(
+    (t) =>
+      t.id !== id &&
+      t.date === date &&
+      !t.isDone &&
+      !t.archived &&
+      t.startTime < endTime &&
+      startTime < t.endTime &&
+      t.assigneeIds.some((a) => assigneeIds.includes(a)),
+  );
 }
 
 // figli, nipoti, … (visita in ampiezza; il Set dei visitati protegge da dati sporchi con cicli)
@@ -126,4 +195,26 @@ export function wouldCreateCycle(tasks, id, parentId) {
   if (parentId == null) return false;
   if (parentId === id) return true;
   return getDescendantIds(tasks, id).has(parentId);
+}
+
+// '1h 30m' / '45m' / '2h'
+export function formatMinutes(min) {
+  if (min == null) return '—';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h && m) return `${h}h ${m}m`;
+  return h ? `${h}h` : `${m}m`;
+}
+
+// data della prossima occorrenza di un'attività ricorrente (il mese si ferma all'ultimo giorno)
+export function nextOccurrence(date, recurrence) {
+  const [y, m, d] = date.split('-').map(Number);
+  const next = new Date(Date.UTC(y, m - 1, d));
+  if (recurrence === 'daily') next.setUTCDate(next.getUTCDate() + 1);
+  else if (recurrence === 'weekly') next.setUTCDate(next.getUTCDate() + 7);
+  else if (recurrence === 'monthly') {
+    const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    next.setTime(Date.UTC(y, m, Math.min(d, lastDay)));
+  } else return null;
+  return next.toISOString().slice(0, 10);
 }

@@ -148,15 +148,7 @@
   background: var(--color-text-muted);
 }
 
-.column[data-status='doing'] .column__title::before {
-  background: var(--color-primary);
-}
-
-.column[data-status='review'] .column__title::before {
-  background: var(--color-warning);
-}
-
-.column[data-status='done'] .column__title::before {
+.column--done .column__title::before {
   background: var(--color-success);
 }
 

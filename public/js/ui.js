@@ -157,6 +157,7 @@ export function confirmDialog(
 
     const text = document.createElement('p');
     text.textContent = message;
+    text.style.whiteSpace = 'pre-line'; // i messaggi possono avere elenchi su più righe
 
     const actions = document.createElement('div');
     actions.className = 'form-actions';
@@ -186,5 +187,62 @@ export function confirmDialog(
     });
 
     cancelButton.focus();
+  });
+}
+
+// chiede una riga di testo; ritorna il testo oppure null se si annulla
+export function promptDialog(
+  label,
+  { title = 'Nome', value = '', okLabel = 'Salva', maxLength = 100 } = {},
+) {
+  return new Promise((resolve) => {
+    const form = document.createElement('form');
+    form.noValidate = true;
+
+    const field = document.createElement('div');
+    field.className = 'form-field';
+    const labelEl = document.createElement('label');
+    labelEl.className = 'form-label';
+    labelEl.textContent = label;
+    labelEl.htmlFor = 'prompt-input';
+    const input = document.createElement('input');
+    input.id = 'prompt-input';
+    input.className = 'input';
+    input.type = 'text';
+    input.maxLength = maxLength;
+    input.value = value;
+    const error = document.createElement('p');
+    error.className = 'form-error';
+    field.append(labelEl, input, error);
+
+    const actions = document.createElement('div');
+    actions.className = 'form-actions';
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'btn btn--secondary';
+    cancelButton.type = 'button';
+    cancelButton.textContent = 'Annulla';
+    const okButton = document.createElement('button');
+    okButton.className = 'btn btn--primary';
+    okButton.type = 'submit';
+    okButton.textContent = okLabel;
+    actions.append(cancelButton, okButton);
+    form.append(field, actions);
+
+    let result = null;
+    const modal = openModal(form, { title, size: 'sm', onClose: () => resolve(result) });
+    input.select();
+
+    cancelButton.addEventListener('click', () => modal.close());
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) {
+        error.textContent = 'Scrivi un nome';
+        input.classList.add('input--invalid');
+        return;
+      }
+      result = text;
+      modal.close();
+    });
   });
 }

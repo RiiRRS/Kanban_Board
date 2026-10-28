@@ -40,16 +40,45 @@ export function formatDateTime(iso) {
   return iso ? dateTime.format(new Date(iso)) : '';
 }
 
+// "3 min fa", "2 h fa", "ieri", oppure la data per le cose più vecchie
+export function formatRelative(iso) {
+  if (!iso) return '';
+  const seconds = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  if (seconds < 45) return 'adesso';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min fa`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} h fa`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return 'ieri';
+  if (days < 7) return `${days} giorni fa`;
+  return formatDateTime(iso);
+}
+
 export function isToday(date) {
   return date === todayISO();
 }
 
-// scaduta = non fatta e già finita
+// scaduta = non completata e già finita
 export function isOverdue(task) {
-  if (task.status === 'done') return false;
+  if (task.isDone) return false;
   const today = todayISO();
   if (task.date < today) return true;
   if (task.date > today) return false;
   const now = new Date();
   return task.endTime < `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+// lunedì della settimana che contiene la data (le settimane italiane iniziano di lunedì)
+export function startOfWeek(date) {
+  const [y, m, d] = date.split('-').map(Number);
+  const day = new Date(y, m - 1, d);
+  day.setDate(day.getDate() - ((day.getDay() + 6) % 7));
+  return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
+}
+
+export function addDays(date, n) {
+  const [y, m, d] = date.split('-').map(Number);
+  const day = new Date(y, m - 1, d + n);
+  return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
 }

@@ -1,23 +1,18 @@
-// Finestra di dettaglio di un'attività: dati, gerarchia, eliminazione e commenti
+// Finestra di dettaglio di un'attività: dati, descrizione, tempo, gerarchia, checklist,
+// allegati, commenti e cronologia
 
-import { deleteTask, getComments, addComment, ApiError } from './api.js';
-import { STATUS_LABELS, PRIORITY_LABELS, LIMITS } from './constants.js';
-import { validateCommentText } from './validation.js';
+import { deleteTask, getTask, setSpentMinutes, ApiError } from './api.js';
+import { PRIORITY_LABELS, RECURRENCE_LABELS } from './constants.js';
 import { formatDate, formatTimeRange, formatDateTime, isOverdue } from './format.js';
+import { formatMinutes } from './validation.js';
+import { renderMarkdown } from './markdown.js';
+import { createAvatar, nameOf } from './avatar.js';
+import { createChecklist } from './checklist.js';
+import { createAttachments } from './attachments.js';
+import { createComments } from './comments.js';
+import { createTaskHistory } from './history.js';
+import { el, button, spinner, errorMessage } from './dom.js';
 import { openModal, showToast, confirmDialog } from './ui.js';
-
-function el(tag, className, text) {
-  const element = document.createElement(tag);
-  if (className) element.className = className;
-  if (text !== undefined) element.textContent = text;
-  return element;
-}
-
-function createSpinner() {
-  const spinner = el('span', 'spinner');
-  spinner.setAttribute('aria-hidden', 'true');
-  return spinner;
-}
 
 function createSection(title) {
   const section = el('section', 'detail__section');
@@ -34,17 +29,37 @@ function createLink(text, onClick) {
   return link;
 }
 
+function progressBar(done, total, { over = false } = {}) {
+  const wrap = el('div', 'progress progress--wide');
+  const track = el('div', 'progress__bar');
+  const fill = el('div', 'progress__fill');
+  fill.style.width = `${total === 0 ? 0 : Math.min(100, Math.round((done / total) * 100))}%`;
+  if (over) fill.classList.add('progress__fill--over');
+  else if (total > 0 && done >= total) fill.classList.add('progress__fill--complete');
+  track.append(fill);
+  wrap.append(track);
+  return wrap;
+}
+
 export function openTaskDetail({
   task,
   allTasks = [],
+  columns = [],
+  users = [],
   currentUser,
   onEdit,
   onDeleted,
   onOpenTask,
-  onCommentAdded,
+  onChanged,
+  onArchive,
 } = {}) {
   const content = el('div');
   let closed = false;
+
+  const isAssignee = task.assignees.some((a) => a.id === currentUser?.id);
+  const canEdit = currentUser?.role === 'admin' || task.createdBy.id === currentUser?.id;
+  const canContribute = canEdit || isAssignee;
+  const column = columns.find((c) => c.id === task.columnId);
 
   // ===== Dati =====
 
@@ -53,23 +68,98 @@ export function openTaskDetail({
 
   const badges = el('div', 'detail__badges');
   badges.append(
-    el('span', 'badge', STATUS_LABELS[task.status]),
+    el('span', 'badge', column?.name ?? '—'),
     el('span', `badge badge--priority-${task.priority}`, PRIORITY_LABELS[task.priority]),
   );
   if (isOverdue(task)) badges.append(el('span', 'badge badge--danger', 'Scaduta'));
+  if (task.archivedAt) badges.append(el('span', 'badge', 'Archiviata'));
+  if (task.recurrence !== 'none') {
+    badges.append(el('span', 'badge', `↻ ${RECURRENCE_LABELS[task.recurrence]}`));
+  }
 
   const meta = el('dl', 'detail__meta');
-  const addMeta = (label, value) => meta.append(el('dt', '', label), el('dd', '', value));
+  const addMeta = (label, value) => {
+    const dd = el('dd');
+    if (value instanceof Node) dd.append(value);
+    else dd.textContent = value;
+    meta.append(el('dt', '', label), dd);
+  };
   addMeta('Data', formatDate(task.date));
   addMeta('Orario', formatTimeRange(task.startTime, task.endTime));
+
+  const people = el('div', 'detail__people');
+  if (task.assignees.length === 0) people.append(el('span', 'detail__muted', 'Nessuno'));
+  for (const a of task.assignees) {
+    const person = el('span', 'person');
+    person.append(createAvatar(a, { size: 22 }), el('span', null, nameOf(a)));
+    people.append(person);
+  }
+  addMeta('Assegnata a', people);
+
+  if (task.labels.length > 0) {
+    const chips = el('div', 'chip-list');
+    for (const l of task.labels) {
+      const chip = el('span', 'label-chip', l.name);
+      chip.style.setProperty('--label-color', l.color);
+      chips.append(chip);
+    }
+    addMeta('Etichette', chips);
+  }
+
   addMeta('Creata da', `${task.createdBy.username}, ${formatDateTime(task.createdAt)}`);
   if (task.updatedAt !== task.createdAt) addMeta('Ultima modifica', formatDateTime(task.updatedAt));
 
   const description = task.description
-    ? el('p', 'detail__description', task.description)
+    ? renderMarkdown(task.description)
     : el('p', 'detail__muted', 'Nessuna descrizione');
 
   content.append(colorBar, badges, meta, description);
+
+  // ===== Tempo =====
+
+  if (task.estimateMin != null || task.spentMin > 0 || canContribute) {
+    const time = createSection('Tempo');
+    const summary = el('p');
+    const barHolder = el('div');
+    let spent = task.spentMin;
+
+    const renderTime = () => {
+      const over = task.estimateMin != null && spent > task.estimateMin;
+      summary.textContent =
+        task.estimateMin != null
+          ? `${formatMinutes(spent)} su ${formatMinutes(task.estimateMin)} stimati${over ? ' (oltre la stima)' : ''}`
+          : `${formatMinutes(spent)} registrati, nessuna stima`;
+      barHolder.replaceChildren(
+        task.estimateMin ? progressBar(spent, task.estimateMin, { over }) : '',
+      );
+    };
+    renderTime();
+    time.section.append(summary, barHolder);
+
+    // aggiungere tempo è permesso anche a chi è assegnato
+    if (canContribute) {
+      const quick = el('div', 'quick-time');
+      for (const minutes of [15, 30, 60]) {
+        const add = button(`+${formatMinutes(minutes)}`, 'btn btn--secondary', async () => {
+          add.disabled = true;
+          try {
+            const saved = await setSpentMinutes(task.id, spent + minutes);
+            spent = saved.spentMin;
+            task.spentMin = spent;
+            renderTime();
+            onChanged?.();
+          } catch (err) {
+            showToast(errorMessage(err), 'error');
+          } finally {
+            add.disabled = false;
+          }
+        });
+        quick.append(add);
+      }
+      time.section.append(quick);
+    }
+    content.append(time.section);
+  }
 
   // ===== Gerarchia =====
 
@@ -89,180 +179,111 @@ export function openTaskDetail({
 
   const children = allTasks.filter((t) => t.parentId === task.id);
   const childrenList = el('div', 'detail__children');
+  const columnName = new Map(columns.map((c) => [c.id, c.name]));
   if (children.length > 0) {
+    const doneCount = children.filter((c) => c.isDone).length;
+    hierarchy.section.append(parentLine);
+    hierarchy.section.append(
+      el('p', 'detail__muted', `${doneCount} su ${children.length} sotto-attività completate`),
+    );
+    hierarchy.section.append(progressBar(doneCount, children.length));
     for (const child of children) {
       childrenList.append(
-        createLink(`${child.title} · ${STATUS_LABELS[child.status]}`, () => openOther(child.id)),
+        createLink(
+          `${child.isDone ? '✓ ' : ''}${child.title} · ${columnName.get(child.columnId) ?? ''}`,
+          () => openOther(child.id),
+        ),
       );
     }
   } else {
+    hierarchy.section.append(parentLine);
     childrenList.append(el('span', 'detail__muted', 'Nessuna sotto-attività'));
   }
-
-  hierarchy.section.append(parentLine, childrenList);
+  hierarchy.section.append(childrenList);
   content.append(hierarchy.section);
+
+  // ===== Checklist e allegati (caricati dal server insieme) =====
+
+  const checklist = createSection('Checklist');
+  const attachmentsSection = createSection('Allegati');
+  const loadingChecklist = el('p', 'comments__status');
+  loadingChecklist.append(spinner(), 'Caricamento…');
+  checklist.section.append(loadingChecklist);
+  attachmentsSection.section.append(el('p', 'comments__status', 'Caricamento…'));
+  content.append(checklist.section, attachmentsSection.section);
+
+  getTask(task.id)
+    .then((full) => {
+      if (closed) return;
+      loadingChecklist.replaceWith(
+        createChecklist({
+          taskId: task.id,
+          items: full.checklist,
+          canContribute,
+          onChange: onChanged,
+        }),
+      );
+      attachmentsSection.section.lastElementChild.replaceWith(
+        createAttachments({
+          taskId: task.id,
+          items: full.attachments,
+          canContribute,
+          // chi ha caricato un file lo toglie; chi può modificare l'attività toglie tutto
+          canDelete: (att) => canEdit || att.uploadedBy === currentUser?.id,
+          onChange: onChanged,
+        }),
+      );
+    })
+    .catch((err) => {
+      if (closed) return;
+      const message = el('p', 'detail__muted', errorMessage(err));
+      loadingChecklist.replaceWith(message);
+      attachmentsSection.section.lastElementChild.replaceWith(el('p', 'detail__muted', '—'));
+    });
 
   // ===== Commenti =====
 
   const comments = createSection('Commenti (0)');
-  const commentsBox = el('div');
-  const commentList = el('ul', 'comment-list');
-  const emptyMessage = el('p', 'detail__muted', 'Nessun commento. Scrivi il primo!');
-  commentList.hidden = true;
-  let commentCount = 0;
-
-  function updateCommentCount() {
-    comments.heading.textContent = `Commenti (${commentCount})`;
-    emptyMessage.hidden = commentCount > 0;
-    commentList.hidden = commentCount === 0;
-  }
-
-  function createCommentItem(comment) {
-    const item = el('li', 'comment');
-    const header = el('div', 'comment__header');
-    const isMe = comment.author.id === currentUser?.id;
-    header.append(el('strong', 'comment__author', comment.author.username + (isMe ? ' (tu)' : '')));
-    const time = el('time', 'comment__date', formatDateTime(comment.createdAt));
-    time.dateTime = comment.createdAt;
-    header.append(time);
-    item.append(header, el('p', 'comment__text', comment.text));
-    return item;
-  }
-
-  function renderComments(list) {
-    if (closed) return;
-    commentList.replaceChildren(...list.map(createCommentItem));
-    commentCount = list.length;
-    updateCommentCount();
-  }
-
-  // form per il nuovo commento
-  const commentForm = el('form', 'comment-form');
-  commentForm.noValidate = true;
-
-  const commentLabel = el('label', 'visually-hidden', 'Nuovo commento');
-  commentLabel.htmlFor = 'comment-text';
-  const commentText = el('textarea', 'textarea');
-  commentText.id = 'comment-text';
-  commentText.maxLength = LIMITS.commentMax;
-  commentText.rows = 3;
-  commentText.placeholder = 'Scrivi un commento…';
-  const commentError = el('p', 'form-error');
-  commentError.id = 'comment-text-error';
-  commentText.setAttribute('aria-describedby', commentError.id);
-
-  const commentFooter = el('div', 'comment-form__footer');
-  const commentCounter = el('span', 'form-hint', `0/${LIMITS.commentMax}`);
-  const commentButton = el('button', 'btn btn--primary', 'Commenta');
-  commentButton.type = 'submit';
-  commentButton.disabled = true;
-  commentFooter.append(commentCounter, commentButton);
-  commentForm.append(commentLabel, commentText, commentError, commentFooter);
-
-  commentText.addEventListener('input', () => {
-    commentCounter.textContent = `${commentText.value.length}/${LIMITS.commentMax}`;
-    commentButton.disabled = commentText.value.trim() === '';
-    commentError.textContent = '';
-    commentText.classList.remove('input--invalid');
+  const commentsUi = createComments({
+    taskId: task.id,
+    currentUser,
+    users,
+    onChange: onChanged,
+    onCount: (n) => (comments.heading.textContent = `Commenti (${n})`),
   });
-
-  // Invio va a capo, Ctrl/Cmd+Invio invia
-  commentText.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      commentForm.requestSubmit();
-    }
-  });
-
-  commentForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (commentButton.disabled) return;
-
-    const text = commentText.value;
-    const error = validateCommentText(text);
-    if (error) {
-      commentError.textContent = error;
-      commentText.classList.add('input--invalid');
-      return;
-    }
-
-    commentButton.disabled = true;
-    commentButton.textContent = '';
-    commentButton.append(createSpinner(), ' Invio…');
-    try {
-      const comment = await addComment(task.id, text);
-      if (closed) return;
-      const item = createCommentItem(comment);
-      commentList.append(item);
-      commentCount++;
-      updateCommentCount();
-      commentText.value = '';
-      commentCounter.textContent = `0/${LIMITS.commentMax}`;
-      item.scrollIntoView({ block: 'nearest' });
-      onCommentAdded?.(task.id);
-    } catch (err) {
-      // il testo scritto resta nel campo
-      if (closed) return;
-      commentError.textContent =
-        err instanceof ApiError ? err.message : 'Errore imprevisto, riprova';
-      commentText.classList.add('input--invalid');
-    } finally {
-      commentButton.textContent = 'Commenta';
-      commentButton.disabled = commentText.value.trim() === '';
-    }
-  });
-
-  function loadComments() {
-    commentsBox.replaceChildren();
-    const loading = el('p', 'comments__status');
-    loading.append(createSpinner(), 'Caricamento commenti…');
-    commentsBox.append(loading);
-
-    getComments(task.id, { onCache: renderComments })
-      .then((list) => {
-        if (closed) return;
-        commentsBox.replaceChildren(commentList, emptyMessage);
-        renderComments(list);
-      })
-      .catch(() => {
-        if (closed) return;
-        const failed = el('p', 'comments__status', 'Impossibile caricare i commenti ');
-        const retry = el('button', 'btn btn--secondary', 'Riprova');
-        retry.type = 'button';
-        retry.addEventListener('click', loadComments);
-        failed.append(retry);
-        commentsBox.replaceChildren(failed);
-      });
-  }
-
-  // se arriva la cache prima dei dati veri, la lista deve già essere nel DOM
-  commentsBox.append(commentList, emptyMessage);
-  comments.section.append(commentsBox, commentForm);
+  comments.section.append(commentsUi.element);
   content.append(comments.section);
 
-  // ===== Bottoni in fondo =====
+  content.append(createTaskHistory(task.id));
 
-  const canEdit = currentUser?.role === 'admin' || task.createdBy.id === currentUser?.id;
+  // ===== Bottoni in fondo =====
 
   const footer = el('div', 'form-actions');
   footer.style.marginTop = 'var(--space-5)';
 
   if (canEdit) {
-    const editButton = el('button', 'btn btn--secondary', 'Modifica');
-    editButton.type = 'button';
-    editButton.addEventListener('click', () => {
+    footer.append(
+      button('Modifica', 'btn btn--secondary', () => {
+        modal.close();
+        onEdit?.(task);
+      }),
+    );
+  }
+  // archiviare e ripristinare si possono annullare a vicenda: sono per tutti, come spostare
+  footer.append(
+    button(task.archivedAt ? 'Ripristina' : 'Archivia', 'btn btn--secondary', async () => {
       modal.close();
-      onEdit?.(task);
-    });
+      onArchive?.(task.id, !task.archivedAt);
+    }),
+  );
 
-    const deleteButton = el('button', 'btn btn--danger', 'Elimina');
-    deleteButton.type = 'button';
-    deleteButton.addEventListener('click', async () => {
+  if (canEdit) {
+    const deleteButton = button('Elimina', 'btn btn--danger', async () => {
       let message = `Eliminare "${task.title}"?`;
       if (children.length > 0) {
         message += ` Le sue ${children.length} sotto-attività non verranno eliminate ma resteranno senza genitore.`;
       }
-      message += ' Anche i commenti verranno eliminati.';
+      message += ' Anche commenti, checklist e allegati verranno eliminati.';
 
       const ok = await confirmDialog(message, {
         title: 'Elimina attività',
@@ -282,18 +303,14 @@ export function openTaskDetail({
         deleteButton.disabled = false;
       }
     });
-
-    footer.append(editButton, deleteButton);
+    footer.append(deleteButton);
   } else {
     footer.append(
       el('p', 'detail__note', 'Solo l’autore o un admin può modificare questa attività'),
     );
   }
 
-  const closeButton = el('button', 'btn btn--secondary', 'Chiudi');
-  closeButton.type = 'button';
-  closeButton.addEventListener('click', () => modal.close());
-  footer.append(closeButton);
+  footer.append(button('Chiudi', 'btn btn--secondary', () => modal.close()));
   content.append(footer);
 
   const modal = openModal(content, {
@@ -301,8 +318,7 @@ export function openTaskDetail({
     size: 'lg',
     onClose: () => {
       closed = true;
+      commentsUi.close();
     },
   });
-
-  loadComments();
 }
