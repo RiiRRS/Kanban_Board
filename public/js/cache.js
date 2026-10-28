@@ -28,7 +28,7 @@ export function removeCache(key) {
   }
 }
 
-// cancella tutto quello che inizia con il prefisso; kanban.prefs e i dati finti restano
+// cancella tutto quello che inizia con il prefisso; kanban.prefs (tema) resta
 export function clearUserCache() {
   try {
     Object.keys(localStorage)
@@ -39,7 +39,9 @@ export function clearUserCache() {
   }
 }
 
-export const tasksKey = (userId) => `u${userId}.tasks`;
+export const tasksKey = (userId, boardId) => `u${userId}.b${boardId}.tasks`;
+export const boardKey = (userId, boardId) => `u${userId}.b${boardId}.def`;
+export const boardsKey = (userId) => `u${userId}.boards`;
 export const commentsKey = (userId, taskId) => `u${userId}.comments.${taskId}`;
 
 // tiene gli ultimi 20 taskId con commenti in cache (l'ultimo usato va in fondo)

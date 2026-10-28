@@ -1,26 +1,21 @@
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { errorHandler, notFound } from './errors.js';
-import authRouter, { requireAuth } from './auth.js';
-import tasksRouter from './tasks.js';
-import commentsRouter from './comments.js';
+import { config } from './config.js';
+import { createApp } from './app.js';
+import { db } from './db.js';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
-const app = express();
-const PORT = process.env.PORT || 3000;
+const server = createApp().listen(config.port, () =>
+  console.log(`Kanban Board su http://localhost:${config.port}`),
+);
 
-app.disable('x-powered-by');
-app.use(express.json({ limit: '100kb' }));
-app.use(cookieParser());
-
-app.use('/api', authRouter);
-app.use('/api/tasks/:taskId/comments', requireAuth, commentsRouter); // prima delle attività
-app.use('/api/tasks', requireAuth, tasksRouter);
-app.use('/api', (req, res, next) => next(notFound('Risorsa non trovata')));
-
-app.use(express.static(path.join(root, 'public'), { extensions: ['html'] }));
-app.use(errorHandler);
-
-app.listen(PORT, () => console.log(`Kanban Board su http://localhost:${PORT}`));
+// chiusura ordinata: smette di accettare richieste e chiude il database (checkpoint WAL)
+function shutdown(signal) {
+  console.log(`${signal}: chiusura in corso`);
+  server.close(() => {
+    db.close();
+    process.exit(0);
+  });
+  // i flussi in tempo reale restano aperti per sempre: senza questo la chiusura non finirebbe
+  server.closeAllConnections();
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

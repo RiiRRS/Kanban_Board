@@ -1,25 +1,36 @@
+/* Palette "lavagna e segnaletica": ardesia per la navigazione, grigio salvia per il piano di
+   lavoro, giallo segnaletica per l'azione principale, verde petrolio per link e focus. */
 :root {
   color-scheme: light;
 
-  --color-bg: #f4f5f7;
-  --color-surface: #ffffff;
-  --color-surface-2: #ebecf0;
-  --color-border: #d9dce1;
-  --color-text: #1f2328;
-  --color-text-muted: #5e6670;
-  --color-primary: #2f6fed;
-  --color-primary-hover: #1f5bd6;
-  --color-on-primary: #ffffff;
-  --color-danger: #d92d20;
-  --color-danger-hover: #b42318;
-  --color-success: #12875c;
-  --color-warning: #b54708;
-  --color-info: #2f6fed;
-  --color-focus: #2f6fed;
-  --color-overlay: rgb(15 23 42 / 0.5);
-  --color-priority-low: #12875c;
-  --color-priority-medium: #b54708;
-  --color-priority-high: #d92d20;
+  --color-bg: #e9ebe5;
+  --color-surface: #fbfbf8;
+  --color-surface-2: #e1e4dd;
+  --color-border: #cdd2c8;
+  --color-text: #17201e;
+  --color-text-muted: #59645f;
+  --color-primary: #f5b700;
+  --color-primary-hover: #e0a600;
+  --color-on-primary: #17201e;
+  --color-accent: #23675f;
+  --color-danger: #b8391f;
+  --color-danger-hover: #962c16;
+  --color-on-danger: #ffffff;
+  --color-success: #2e7d4f;
+  --color-warning: #a35d00;
+  --color-info: #23675f;
+  --color-focus: #23675f;
+  --color-overlay: rgb(14 20 18 / 0.45);
+  --color-priority-low: #2e7d4f;
+  --color-priority-medium: #a35d00;
+  --color-priority-high: #b8391f;
+
+  /* barra laterale: sempre scura, in entrambi i temi */
+  --side-bg: #17201e;
+  --side-surface: #222d2a;
+  --side-border: #33403c;
+  --side-text: #dfe4dd;
+  --side-muted: #8d9a94;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -29,60 +40,69 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
   --radius-full: 999px;
 
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-mono:
+    ui-monospace, 'JetBrains Mono', 'SFMono-Regular', 'Cascadia Mono', Menlo, Consolas, monospace;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;
   --text-lg: 1.25rem;
   --text-xl: 1.5rem;
 
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.08);
-  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.12);
-  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.18);
+  --shadow-sm: 0 1px 0 rgb(23 32 30 / 0.06);
+  --shadow-md: 0 2px 0 rgb(23 32 30 / 0.06), 0 6px 16px rgb(23 32 30 / 0.1);
+  --shadow-lg: 0 16px 40px rgb(23 32 30 / 0.22);
 
   --z-header: 10;
+  --z-sidebar: 40;
   --z-menu: 50;
   --z-modal: 100;
   --z-toast: 200;
   --z-drag: 300;
 
   --transition: 150ms ease;
-  --header-height: 56px;
-  --column-width: 300px;
+  --sidebar-width: 232px;
+  --header-height: 0px; /* la navigazione è nella barra laterale, non in alto */
+  --column-width: 288px;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --color-bg: #0f1115;
-  --color-surface: #181b21;
-  --color-surface-2: #22262e;
-  --color-border: #2f343d;
-  --color-text: #e6e8eb;
-  --color-text-muted: #9aa3ad;
-  --color-primary: #5b8def;
-  --color-primary-hover: #7aa3f2;
-  --color-on-primary: #0f1115;
-  --color-danger: #f97066;
-  --color-danger-hover: #fda29b;
-  --color-success: #32d583;
-  --color-warning: #fdb022;
-  --color-info: #5b8def;
-  --color-focus: #7aa3f2;
+  --color-bg: #111614;
+  --color-surface: #1a211f;
+  --color-surface-2: #232b28;
+  --color-border: #313b37;
+  --color-text: #e4e8e3;
+  --color-text-muted: #95a19b;
+  --color-primary: #f5c030;
+  --color-primary-hover: #ffd055;
+  --color-on-primary: #17201e;
+  --color-accent: #6cc0b3;
+  --color-danger: #f0785f;
+  --color-danger-hover: #f79a86;
+  --color-on-danger: #17201e;
+  --color-success: #5fc28a;
+  --color-warning: #f0b14a;
+  --color-info: #6cc0b3;
+  --color-focus: #6cc0b3;
   --color-overlay: rgb(0 0 0 / 0.6);
-  --color-priority-low: #32d583;
-  --color-priority-medium: #fdb022;
-  --color-priority-high: #f97066;
+  --color-priority-low: #5fc28a;
+  --color-priority-medium: #f0b14a;
+  --color-priority-high: #f0785f;
 
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.5);
-  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.6);
+  --side-bg: #0b0f0e;
+  --side-surface: #18201d;
+  --side-border: #26302c;
+
+  --shadow-sm: 0 1px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 2px 0 rgb(0 0 0 / 0.3), 0 6px 16px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.6);
 }
 
 *,

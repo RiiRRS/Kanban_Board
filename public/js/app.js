@@ -79,9 +79,18 @@ async function main() {
   $('board-new').addEventListener('click', onNewBoard);
   boardSelect.addEventListener('change', () => switchBoard(Number(boardSelect.value)));
 
-  for (const tab of document.querySelectorAll('[data-view]')) {
-    tab.addEventListener('click', () => switchView(tab.dataset.view));
+  for (const tab of document.querySelectorAll('.nav-item[data-view]')) {
+    tab.addEventListener('click', () => {
+      switchView(tab.dataset.view);
+      setNavOpen(false);
+    });
   }
+  $('nav-open').addEventListener('click', () => setNavOpen(true));
+  $('nav-close').addEventListener('click', () => setNavOpen(false));
+  document.querySelector('[data-nav-close]').addEventListener('click', () => setNavOpen(false));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('nav-open')) setNavOpen(false);
+  });
 
   const compact = $('compact-toggle');
   compact.addEventListener('click', () => setCompact(!document.body.classList.contains('compact')));
@@ -168,7 +177,7 @@ function drawUser() {
   const slot = $('profile-button');
   slot.replaceChildren(createAvatar(state.user, { size: 24 }));
   const name = document.createElement('span');
-  name.className = 'app-header__label';
+  name.className = 'nav-item__label';
   name.textContent = nameOf(state.user);
   slot.append(name);
   slot.title = 'Il tuo profilo';
@@ -178,6 +187,13 @@ function setBoards(boards) {
   state.boards = boards;
   boardSelect.replaceChildren(...boards.map((b) => new Option(b.name, String(b.id))));
   if (state.boardId != null) boardSelect.value = String(state.boardId);
+}
+
+// su telefono la barra laterale è a scomparsa
+function setNavOpen(open) {
+  document.body.classList.toggle('nav-open', open);
+  $('nav-open').setAttribute('aria-expanded', String(open));
+  if (open) $('sidebar').querySelector('select, button')?.focus();
 }
 
 function setCompact(on) {
@@ -256,7 +272,7 @@ function setTasks(tasks, { force = false } = {}) {
 function switchView(view) {
   if (view === state.view) return;
   state.view = view;
-  for (const tab of document.querySelectorAll('[data-view]')) {
+  for (const tab of document.querySelectorAll('.nav-item[data-view]')) {
     const active = tab.dataset.view === view;
     tab.setAttribute('aria-current', active ? 'page' : 'false');
     tab.classList.toggle('tab--active', active);
@@ -289,6 +305,7 @@ function render() {
   viewEl.hidden = isBoard;
   // i filtri e l'archivio hanno senso su board e calendario
   $('toolbar').dataset.view = state.view;
+  $('board-title').textContent = state.board.name;
   document.title = `${state.board.name} · Kanban Board`;
 
   if (isBoard) {

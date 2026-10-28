@@ -265,39 +265,47 @@ function buildColumn(column, tasks, byId, columns, handlers) {
   const title = el('h2', 'column__title', column.name);
   title.id = `column-title-${column.id}`;
 
-  // con il limite WIP il contatore diventa "3/4" e cambia colore quando il limite è raggiunto
+  // con il limite WIP il contatore diventa "3/4" e le tacche sotto si riempiono fino al limite
   const limit = column.wipLimit;
-  const count = el(
-    'span',
-    'column__count',
-    limit ? `${tasks.length}/${limit}` : String(tasks.length),
-  );
-  if (limit && !archivedView) {
+  const wip = limit && !archivedView;
+  const count = el('span', 'column__count', String(tasks.length));
+  if (limit) count.append(el('span', 'column__limit', `/${limit}`));
+  if (wip) {
     if (tasks.length > limit) count.classList.add('column__count--over');
-    else if (tasks.length === limit) count.classList.add('column__count--full');
     count.title = `Limite WIP: ${limit}`;
   }
   count.setAttribute(
     'aria-label',
     `${plural(tasks.length, 'attività', 'attività')}${limit ? `, limite ${limit}` : ''}`,
   );
-  header.append(title, count);
 
+  const meter = el('div', 'column__meter');
+  meter.setAttribute('aria-hidden', 'true');
+  const cells = wip ? Math.max(limit, tasks.length) : 1;
+  for (let i = 0; i < cells; i++) {
+    const on = wip ? i < tasks.length : tasks.length > 0;
+    meter.append(el('span', `column__meter-cell${on ? ' column__meter-cell--on' : ''}`));
+  }
+  if (wip && tasks.length > limit) meter.classList.add('column__meter--over');
+  else if (wip && tasks.length === limit) meter.classList.add('column__meter--full');
+
+  const actions = el('div', 'column__actions');
   if (!archivedView) {
     if (column.isDone && tasks.length > 0) {
       const archive = el('button', 'column__archive btn btn--ghost', 'Archivia');
       archive.type = 'button';
       archive.title = 'Archivia tutte le attività completate';
       archive.addEventListener('click', () => handlers.onArchiveDone?.());
-      header.append(archive);
+      actions.append(archive);
     }
     const add = el('button', 'column__add btn btn--ghost btn--icon', '+');
     add.type = 'button';
     add.dataset.columnId = column.id;
     add.setAttribute('aria-label', `Aggiungi attività in ${column.name}`);
     add.addEventListener('click', () => handlers.onAddTask?.(column.id));
-    header.append(add);
+    actions.append(add);
   }
+  header.append(title, count, actions, meter);
 
   const list = el('div', 'column__list');
   list.dataset.columnId = column.id;

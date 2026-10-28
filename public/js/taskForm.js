@@ -456,7 +456,7 @@ export function openTaskForm({
 
   const modal = openModal(form, {
     title: isEdit ? 'Modifica attività' : 'Nuova attività',
-    size: 'lg',
+    size: 'drawer',
     beforeClose: () => {
       if (saving) return false;
       return isDirty() ? askDiscard() : true;

@@ -51,7 +51,7 @@ export function initFilters(container, onChange, { userId } = {}) {
   labelSelect.append(new Option('Tutte le etichette', ''));
 
   const check = (id, text) => {
-    const label = el('label', 'app-header__check');
+    const label = el('label', 'filter-check');
     const input = el('input');
     input.type = 'checkbox';
     input.id = id;

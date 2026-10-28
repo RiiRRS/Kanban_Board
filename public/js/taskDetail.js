@@ -315,7 +315,7 @@ export function openTaskDetail({
 
   const modal = openModal(content, {
     title: task.title,
-    size: 'lg',
+    size: 'drawer',
     onClose: () => {
       closed = true;
       commentsUi.close();
