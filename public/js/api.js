@@ -30,7 +30,7 @@ import {
   rememberCommentsTask,
 } from './cache.js';
 
-export const USE_STUBS = true;
+export const USE_STUBS = false;
 
 export class ApiError extends Error {
   constructor(message, status = 0, field = null) {
