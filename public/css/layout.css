@@ -49,6 +49,14 @@
   gap: var(--space-2);
 }
 
+.app-header__check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
 .app-header__actions {
   display: flex;
   flex-wrap: wrap;
@@ -325,6 +333,11 @@
     order: 10;
     flex-basis: 100%;
     max-width: none;
+  }
+
+  .app-header__filters {
+    order: 11;
+    flex-basis: 100%;
   }
 
   .app-header__label {
