@@ -176,7 +176,12 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
+  touch-action: manipulation;
   transition: box-shadow var(--transition);
+}
+
+.card[draggable='true'] {
+  cursor: grab;
 }
 
 .card:hover {
@@ -359,37 +364,42 @@
   }
 }
 
-/* Drag-and-drop (dnd.js) */
-
 body.is-dragging {
   cursor: grabbing;
   user-select: none;
 }
 
+body.is-dragging .card {
+  touch-action: none;
+}
+
 .card--dragging {
   opacity: 0.4;
-}
-
-.column__list--over {
-  background: var(--color-surface-2);
-  border-radius: var(--radius-md);
-}
-
-.drop-indicator {
-  flex-shrink: 0;
-  height: 3px;
-  border-radius: var(--radius-full);
-  background: var(--color-primary);
-  pointer-events: none;
+  border-style: dashed;
 }
 
 .card--ghost {
   position: fixed;
   top: 0;
   left: 0;
-  margin: 0;
-  opacity: 0.9;
-  box-shadow: var(--shadow-lg);
-  pointer-events: none;
   z-index: var(--z-drag);
+  width: var(--column-width);
+  opacity: 0.95;
+  box-shadow: var(--shadow-lg);
+  rotate: 2deg;
+  pointer-events: none;
+}
+
+.column__list--over {
+  outline: 2px dashed var(--color-primary);
+  outline-offset: -2px;
+}
+
+.drop-indicator {
+  flex-shrink: 0;
+  height: 3px;
+  margin: 2px 0;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  pointer-events: none;
 }
