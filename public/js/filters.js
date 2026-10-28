@@ -6,6 +6,7 @@ const state = { text: '', priority: '', urgentOnly: false };
 
 let searchInput = null;
 let onSearchInput = null;
+let suggestions = null;
 
 // ignora maiuscole e accenti
 function normalize(s) {
@@ -70,6 +71,13 @@ export function initFilters(container, onChange) {
   searchInput?.removeEventListener('input', onSearchInput);
   searchInput = document.getElementById('search-input');
   searchInput.value = '';
+  suggestions = document.getElementById('search-suggestions');
+  if (!suggestions) {
+    suggestions = el('datalist');
+    suggestions.id = 'search-suggestions';
+    searchInput.after(suggestions);
+  }
+  searchInput.setAttribute('list', suggestions.id);
   let timer = null;
   onSearchInput = () => {
     clearTimeout(timer);
@@ -105,4 +113,11 @@ export function applyFilters(tasks) {
     }
     return true;
   });
+}
+
+// suggerisce i titoli delle attività nel campo di ricerca
+export function setSearchSuggestions(tasks) {
+  if (!suggestions) return;
+  const titles = [...new Set(tasks.map((t) => t.title))].sort((a, b) => a.localeCompare(b, 'it'));
+  suggestions.replaceChildren(...titles.map((title) => new Option(title)));
 }

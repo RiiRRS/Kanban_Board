@@ -46,7 +46,22 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-2) var(--space-3);
+}
+
+.app-header__filters .select {
+  width: auto;
+  min-height: 36px;
+  font-size: var(--text-sm);
+}
+
+.app-header__search .input {
+  min-height: 36px;
+  font-size: var(--text-sm);
+}
+
+.app-header__check {
+  white-space: nowrap;
 }
 
 .app-header__check {
@@ -329,19 +344,83 @@
 }
 
 @media (max-width: 700px) {
+  .app-header {
+    position: static;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    padding-top: max(var(--space-2), env(safe-area-inset-top));
+    padding-left: max(var(--space-3), env(safe-area-inset-left));
+    padding-right: max(var(--space-3), env(safe-area-inset-right));
+  }
+
+  .app-header__actions {
+    flex-wrap: nowrap;
+    gap: var(--space-1);
+  }
+
+  .app-header__user,
+  .app-header__label {
+    display: none;
+  }
+
+  /* tema: solo icona */
+  #theme-toggle {
+    width: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  #theme-toggle::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
   .app-header__search {
     order: 10;
     flex-basis: 100%;
     max-width: none;
   }
 
+  /* 16px evita lo zoom automatico di iOS al focus */
+  .app-header__search .input,
+  .app-header__filters .select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* filtri su una riga, scorrevoli in orizzontale */
   .app-header__filters {
     order: 11;
     flex-basis: 100%;
+    flex-wrap: nowrap;
+    margin-inline: calc(-1 * var(--space-3));
+    padding: 2px var(--space-3);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
-  .app-header__label {
+  .app-header__filters::-webkit-scrollbar {
     display: none;
+  }
+
+  .app-header__filters > * {
+    flex-shrink: 0;
+  }
+
+  .app-header__check {
+    min-height: 44px;
+    padding: 0 var(--space-3);
+    background: var(--color-surface-2);
+    border-radius: var(--radius-full);
+  }
+
+  .app-header__check input {
+    width: 18px;
+    height: 18px;
   }
 
   .app-header .btn,
@@ -350,30 +429,63 @@
     min-height: 44px;
   }
 
+  /* la pagina scorre in verticale, la board in orizzontale a colonne intere */
   .board {
-    grid-auto-columns: 85vw;
+    grid-auto-columns: 86vw;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    padding-left: max(var(--space-3), env(safe-area-inset-left));
+    padding-right: max(var(--space-3), env(safe-area-inset-right));
+    padding-bottom: max(var(--space-6), env(safe-area-inset-bottom));
+    min-height: 0;
     scroll-snap-type: x mandatory;
-    scroll-padding-inline: var(--space-4);
+    scroll-padding-inline: var(--space-3);
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .column {
-    scroll-snap-align: start;
-    max-height: calc(100dvh - var(--header-height) - 2 * var(--space-4));
+    max-height: none;
+    padding: var(--space-2);
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+
+  .column__header {
+    padding: var(--space-1) var(--space-1) 0;
+  }
+
+  .column__list {
+    overflow-y: visible;
   }
 
   .card__body {
-    padding-right: calc(44px + var(--space-2));
+    padding-right: calc(44px + var(--space-1));
   }
 
   .card__menu-button {
+    opacity: 1;
     top: 0;
     right: 0;
     width: 44px;
     height: 44px;
   }
 
+  /* menu della card come bottom sheet */
+  .card__menu {
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100%;
+    padding: var(--space-2) var(--space-2) max(var(--space-2), env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
   .card__menu button {
-    min-height: 44px;
+    min-height: 48px;
+    font-size: var(--text-md);
   }
 }
 

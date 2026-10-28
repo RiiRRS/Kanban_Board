@@ -8,7 +8,7 @@ import { initTheme } from './theme.js';
 import { openTaskForm } from './taskForm.js';
 import { openTaskDetail } from './taskDetail.js';
 import { showToast } from './ui.js';
-import { initFilters, applyFilters } from './filters.js';
+import { initFilters, applyFilters, setSearchSuggestions } from './filters.js';
 import { initShortcuts } from './shortcuts.js';
 
 const state = { user: null, tasks: [] };
@@ -85,6 +85,7 @@ function setTasks(tasks) {
 }
 
 function render() {
+  setSearchSuggestions(state.tasks);
   renderBoard(boardEl, applyFilters(state.tasks), {
     allTasks: state.tasks,
     onOpenTask,
