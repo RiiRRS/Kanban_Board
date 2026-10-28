@@ -26,14 +26,27 @@
       <h1 class="app-header__logo">Kanban</h1>
       <div class="app-header__search">
         <label class="visually-hidden" for="search-input">Cerca attività</label>
-        <input id="search-input" class="input" type="search" placeholder="Cerca..." autocomplete="off" />
+        <input
+          id="search-input"
+          class="input"
+          type="search"
+          placeholder="Cerca..."
+          autocomplete="off"
+        />
       </div>
       <div id="filters" class="app-header__filters"></div>
       <div class="app-header__actions">
         <button id="new-task-button" class="btn btn--primary" type="button">
           <span aria-hidden="true">+</span> <span class="app-header__label">Nuova attività</span>
         </button>
-        <button id="theme-toggle" class="btn btn--ghost" type="button" aria-label="Attiva tema scuro">Tema scuro</button>
+        <button
+          id="theme-toggle"
+          class="btn btn--ghost"
+          type="button"
+          aria-label="Attiva tema scuro"
+        >
+          Tema scuro
+        </button>
         <span class="app-header__user">Utente: <span id="current-user"></span></span>
         <button id="logout-button" class="btn btn--secondary" type="button">Esci</button>
       </div>

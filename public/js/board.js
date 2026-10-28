@@ -139,7 +139,9 @@ function buildCard(task, byId, { onOpenTask, onMoveTask }) {
   if (parent) body.append(el('p', 'card__parent', `↑ ${parent.title}`));
 
   const badges = el('div', 'card__badges');
-  badges.append(el('span', `badge badge--priority-${task.priority}`, PRIORITY_LABELS[task.priority]));
+  badges.append(
+    el('span', `badge badge--priority-${task.priority}`, PRIORITY_LABELS[task.priority]),
+  );
   if (overdue) badges.append(el('span', 'badge badge--danger', 'Scaduta'));
   if (task.commentCount > 0) {
     badges.append(el('span', 'badge', plural(task.commentCount, 'commento', 'commenti')));

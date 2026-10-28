@@ -104,7 +104,8 @@ export function openTaskForm({ task = null, status = 'todo', allTasks = [], onSa
     endTime: task?.endTime ?? addOneHour(startTime),
     status: task?.status ?? status,
     priority: task?.priority ?? 'medium',
-    color: task?.color ?? DEFAULT_COLOR,
+    // <input type=color> restituisce sempre minuscolo
+    color: (task?.color ?? DEFAULT_COLOR).toLowerCase(),
     parentId: task?.parentId != null ? String(task.parentId) : '',
   };
 

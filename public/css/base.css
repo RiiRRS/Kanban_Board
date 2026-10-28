@@ -103,7 +103,9 @@ body {
   line-height: 1.5;
   color: var(--color-text);
   background: var(--color-bg);
-  transition: background-color var(--transition), color var(--transition);
+  transition:
+    background-color var(--transition),
+    color var(--transition);
 }
 
 h1,

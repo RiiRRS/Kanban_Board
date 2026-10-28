@@ -44,7 +44,7 @@ async function main() {
   if (!navigator.onLine) showOfflineBanner();
 
   renderBoardLoading(boardEl);
-  enableDragAndDrop(boardEl, { onDrop: onMove });
+  enableDragAndDrop(boardEl, { onDrop });
   await refresh();
 }
 
@@ -120,6 +120,20 @@ function onAddTask(status) {
 function onMoveTask(taskId, status) {
   const position = state.tasks.filter((t) => t.status === status && t.id !== taskId).length;
   return onMove(taskId, status, position);
+}
+
+// posizione tra TUTTE le attività della colonna (i filtri nascondono delle card):
+// prima della card successiva, oppure in fondo
+function toServerPosition(taskId, status, afterId) {
+  const column = state.tasks
+    .filter((t) => t.status === status && t.id !== taskId)
+    .sort((a, b) => a.position - b.position || a.id - b.id);
+  const index = afterId == null ? -1 : column.findIndex((t) => t.id === afterId);
+  return index === -1 ? column.length : index;
+}
+
+async function onDrop(taskId, status, _visiblePosition, afterId) {
+  return onMove(taskId, status, toServerPosition(taskId, status, afterId));
 }
 
 async function onMove(taskId, status, position) {

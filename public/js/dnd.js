@@ -86,7 +86,8 @@ export function enableDragAndDrop(board, { onDrop } = {}) {
     if (status === fromStatus && position === fromPosition) return true;
     list.querySelector('.column__empty')?.remove();
     list.insertBefore(card, after);
-    onDrop?.(id, status, position);
+    // anche l'id della card successiva: con i filtri attivi l'indice visibile non basta
+    onDrop?.(id, status, position, after ? Number(after.dataset.taskId) : null);
     return true;
   }
 
