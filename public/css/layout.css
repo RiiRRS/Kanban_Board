@@ -358,3 +358,38 @@
     min-height: 44px;
   }
 }
+
+/* Drag-and-drop (dnd.js) */
+
+body.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.card--dragging {
+  opacity: 0.4;
+}
+
+.column__list--over {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+}
+
+.drop-indicator {
+  flex-shrink: 0;
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  pointer-events: none;
+}
+
+.card--ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin: 0;
+  opacity: 0.9;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  z-index: var(--z-drag);
+}
