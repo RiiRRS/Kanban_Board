@@ -365,10 +365,14 @@ const updateTask = db.transaction((id, input, user, flags) => {
     input.endTime !== old.endTime ||
     !sameSet(input.assigneeIds, oldAssigneeIds);
   // un conflitto già confermato in passato non va richiesto a ogni modifica del titolo
-  if (timeChanged) checkConflicts(input, id, flags.ignoreConflicts || column.is_done === 1);
+  const reopened = old.isDone && column.is_done === 0;
+  if (timeChanged || reopened) {
+    checkConflicts(input, id, flags.ignoreConflicts || column.is_done === 1);
+  }
 
   const columnChanged = column.id !== old.columnId;
-  if (columnChanged) checkWip(column, id, flags.force);
+  // un'attività in archivio non occupa un posto nella colonna
+  if (columnChanged && old.archivedAt == null) checkWip(column, id, flags.force);
 
   let position = old.position;
   if (columnChanged) {
@@ -407,7 +411,9 @@ const updateTask = db.transaction((id, input, user, flags) => {
   // cronologia: cosa è cambiato davvero
   const changed = [];
   for (const f of ['title', 'description', 'color', 'priority', 'parentId']) {
-    if (input[f] !== old[f]) changed.push(FIELD_LABELS[f]);
+    const same =
+      f === 'color' ? input.color.toLowerCase() === old.color.toLowerCase() : input[f] === old[f];
+    if (!same) changed.push(FIELD_LABELS[f]);
   }
   if (
     input.date !== old.date ||
@@ -468,6 +474,14 @@ const moveTask = db.transaction((id, columnId, position, user, flags) => {
 
   const columnChanged = column.id !== old.columnId;
   if (columnChanged) checkWip(column, id, flags.force);
+  // riaprire un'attività completata può metterla in conflitto con altre
+  if (old.isDone && column.is_done === 0) {
+    checkConflicts(
+      { ...old, assigneeIds: old.assignees.map((a) => a.id) },
+      id,
+      flags.ignoreConflicts,
+    );
+  }
 
   closeGap(old.columnId, old.position);
   const n = openCount(column.id, id);
@@ -504,13 +518,23 @@ router.patch('/:id/move', (req, res) => {
 });
 
 // archiviare e ripristinare si possono annullare a vicenda, quindi come spostare: a tutti
-const setArchived = db.transaction((id, archived, user) => {
+const setArchived = db.transaction((id, archived, user, flags = {}) => {
   const task = loadTask(id, user);
   if (archived === (task.archivedAt != null)) return task;
   if (archived) {
     closeGap(task.columnId, task.position);
     db.prepare("UPDATE tasks SET archived_at = datetime('now'), position = 0 WHERE id = ?").run(id);
   } else {
+    // tornando tra le attività aperte conta di nuovo per il limite WIP e per gli orari
+    const column = getColumn(task.columnId);
+    checkWip(column, id, flags.force);
+    if (!column.is_done) {
+      checkConflicts(
+        { ...task, assigneeIds: task.assignees.map((a) => a.id) },
+        id,
+        flags.ignoreConflicts,
+      );
+    }
     db.prepare('UPDATE tasks SET archived_at = NULL, position = ? WHERE id = ?').run(
       nextPosition(task.columnId),
       id,
@@ -524,7 +548,7 @@ const setArchived = db.transaction((id, archived, user) => {
 
 router.post('/:id/archive', (req, res) => {
   const archived = req.body?.archived !== false;
-  res.json(setArchived(parseId(req.params.id), archived, req.user));
+  res.json(setArchived(parseId(req.params.id), archived, req.user, flagsOf(req.body)));
 });
 
 // ---------------------------------------------------------------------------

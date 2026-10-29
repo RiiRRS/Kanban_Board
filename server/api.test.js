@@ -1528,3 +1528,27 @@ test('il database è alla versione più recente delle migrazioni', async () => {
   assert.equal(db.pragma('foreign_keys', { simple: true }), 1);
   assert.deepEqual(db.pragma('foreign_key_check'), []);
 });
+
+test('WIP: ripristinare dall’archivio in una colonna piena chiede conferma', async () => {
+  const board = (await member('POST', '/api/boards', { name: 'WIP archivio' })).body;
+  const [, doing] = board.columns;
+  await member('PUT', `/api/boards/${board.id}/columns/${doing.id}`, {
+    name: doing.name,
+    wipLimit: 1,
+    isDone: false,
+  });
+  const a = (await member('POST', '/api/tasks', task({ columnId: doing.id }))).body;
+  await member('POST', `/api/tasks/${a.id}/archive`, {});
+  await member('POST', '/api/tasks', task({ columnId: doing.id }));
+
+  const back = await member('POST', `/api/tasks/${a.id}/archive`, { archived: false });
+  assert.equal(back.status, 409);
+  assert.equal(back.body.code, 'wip_limit');
+  const forced = await member('POST', `/api/tasks/${a.id}/archive`, {
+    archived: false,
+    force: true,
+  });
+  assert.equal(forced.status, 200);
+  assert.equal(forced.body.archivedAt, null);
+  await member('DELETE', `/api/boards/${board.id}`);
+});

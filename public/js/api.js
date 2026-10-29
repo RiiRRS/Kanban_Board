@@ -218,8 +218,8 @@ export const updateTask = (id, input, flags = {}) =>
 export const moveTask = (id, columnId, position, flags = {}) =>
   authed('PATCH', `/api/tasks/${id}/move`, { columnId, position, ...flags });
 export const deleteTask = (id) => authed('DELETE', `/api/tasks/${id}`);
-export const archiveTask = (id, archived = true) =>
-  authed('POST', `/api/tasks/${id}/archive`, { archived });
+export const archiveTask = (id, archived = true, flags = {}) =>
+  authed('POST', `/api/tasks/${id}/archive`, { archived, ...flags });
 export const setSpentMinutes = (id, spentMin) =>
   authed('PATCH', `/api/tasks/${id}/time`, { spentMin });
 export const getTaskEvents = (id) => authed('GET', `/api/tasks/${id}/events`);

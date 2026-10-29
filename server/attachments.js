@@ -7,7 +7,7 @@ import path from 'node:path';
 import { db, rowToAttachment } from './db.js';
 import { badRequest, forbidden, notFound } from './errors.js';
 import { LIMITS } from '../public/js/constants.js';
-import { canContribute, canEdit } from './access.js';
+import { canEdit } from './access.js';
 import { loadTask, parseId } from './tasks.js';
 import { config } from './config.js';
 import { recordEvent } from './events.js';
@@ -131,7 +131,9 @@ attachments.get('/:id/download', (req, res) => {
     'X-Content-Type-Options': 'nosniff',
     'Content-Length': String(row.size),
   });
-  fs.createReadStream(file).pipe(res);
+  const stream = fs.createReadStream(file);
+  stream.on('error', () => res.destroy());
+  stream.pipe(res);
 });
 
 // elimina chi l'ha caricato o chi può modificare l'attività
@@ -139,8 +141,11 @@ attachments.delete('/:id', (req, res) => {
   const row = loadAttachment(req.params.id);
   const task = loadTask(row.task_id, req.user);
   if (row.uploaded_by !== req.user.id && !canEdit(req.user, task)) throw forbidden();
-  if (!canContribute(req.user, task)) throw forbidden();
   db.prepare('DELETE FROM attachments WHERE id = ?').run(row.id);
+  recordEvent(task.boardId, task.id, req.user.id, 'attachment.removed', {
+    title: task.title,
+    name: row.name,
+  });
   if (row.kind === 'file') fs.rmSync(path.join(config.uploadDir, row.stored_name), { force: true });
   res.status(204).end();
 });

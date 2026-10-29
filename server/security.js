@@ -39,7 +39,12 @@ export function csrfGuard(req, res, next) {
 }
 
 // Limite in memoria per IP: max richieste ogni windowMs. Basta per un'istanza sola.
-export function rateLimit({ windowMs, max, message = 'Troppi tentativi, riprova tra poco' }) {
+export function rateLimit({
+  windowMs,
+  max,
+  message = 'Troppi tentativi, riprova tra poco',
+  skipSuccessful = false,
+}) {
   const hits = new Map(); // ip -> { count, resetAt }
   setInterval(() => {
     const now = Date.now();
@@ -54,6 +59,12 @@ export function rateLimit({ windowMs, max, message = 'Troppi tentativi, riprova 
       hits.set(req.ip, h);
     }
     h.count += 1;
+    // chi riesce (login giusto) non consuma tentativi: il limite serve contro chi sbaglia
+    if (skipSuccessful) {
+      res.on('finish', () => {
+        if (res.statusCode < 400 && h.count > 0) h.count -= 1;
+      });
+    }
     if (h.count > max) {
       res.set('Retry-After', String(Math.ceil((h.resetAt - now) / 1000)));
       return next(new HttpError(429, message));

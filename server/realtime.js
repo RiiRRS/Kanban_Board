@@ -1,8 +1,14 @@
 // Aggiornamenti in tempo reale con Server-Sent Events: ogni modifica avvisa tutti i client
 // collegati, che poi ricaricano i dati (il messaggio non porta il contenuto).
 
+import { db } from './db.js';
+
 const clients = new Set();
 const PING_MS = 25_000;
+
+const sessionValid = (hash) =>
+  db.prepare("SELECT 1 FROM sessions WHERE token = ? AND expires_at > datetime('now')").get(hash) !=
+  null;
 
 export function openStream(req, res) {
   res.set({
@@ -14,8 +20,12 @@ export function openStream(req, res) {
   res.flushHeaders();
   res.write('retry: 3000\n\n');
   clients.add(res);
-  // un messaggio ogni tanto evita che proxy e browser chiudano la connessione inattiva
-  const ping = setInterval(() => res.write(': ping\n\n'), PING_MS);
+  // un messaggio ogni tanto evita che proxy e browser chiudano la connessione inattiva;
+  // se la sessione è finita (logout o scadenza) il flusso si chiude
+  const ping = setInterval(() => {
+    if (!sessionValid(req.sessionHash)) return res.end();
+    res.write(': ping\n\n');
+  }, PING_MS);
   req.on('close', () => {
     clearInterval(ping);
     clients.delete(res);

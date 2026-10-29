@@ -163,12 +163,16 @@ async function main() {
   connectRealtime({
     onChange: () => {
       clearTimeout(timer);
-      timer = setTimeout(() => {
-        // durante un trascinamento la board non deve cambiare sotto le mani
-        if (document.body.classList.contains('is-dragging')) return;
+      const run = () => {
+        // durante un trascinamento la board non deve cambiare sotto le mani: si riprova dopo
+        if (document.body.classList.contains('is-dragging')) {
+          timer = setTimeout(run, 500);
+          return;
+        }
         refresh();
         notifications.refresh();
-      }, 250);
+      };
+      timer = setTimeout(run, 250);
     },
   });
   notifications.refresh();
@@ -245,7 +249,9 @@ async function load() {
       // la board è stata eliminata da qualcun altro
       showToast('La board non esiste più', 'info');
       setBoards(boards);
-      return switchBoard(boards[0].id);
+      // fuori da questo caricamento: switchBoard aspetta refresh(), cioè questa stessa promise
+      setTimeout(() => switchBoard(boards[0].id), 0);
+      return;
     }
     setBoards(boards);
     setBoardDef(board);
@@ -439,10 +445,10 @@ async function onMove(taskId, columnId, position) {
 
 async function onArchiveTask(taskId, archived) {
   try {
-    await archiveTask(taskId, archived);
+    await withConfirmation((flags) => archiveTask(taskId, archived, flags));
     showToast(archived ? 'Attività archiviata' : 'Attività ripristinata', 'success');
   } catch (err) {
-    showToast(errorMessage(err), 'error');
+    if (!(err instanceof Cancelled)) showToast(errorMessage(err), 'error');
   }
   await refresh();
 }

@@ -21,7 +21,11 @@ const DUMMY_HASH = bcrypt.hashSync('password-inesistente', 10);
 // nel DB finisce solo l'hash del token: una copia del file non permette di entrare
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
-const authLimiter = rateLimit({ windowMs: 15 * 60_000, max: config.authRateMax });
+const authLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: config.authRateMax,
+  skipSuccessful: true,
+});
 
 function createSession(res, userId) {
   const token = crypto.randomBytes(32).toString('hex');
@@ -49,6 +53,7 @@ export function requireAuth(req, res, next) {
     .get(hashToken(token));
   if (!row) throw unauthorized();
   req.user = rowToUser(row);
+  req.sessionHash = hashToken(token);
   next();
 }
 
@@ -57,13 +62,16 @@ const insertUser = db.transaction((username, hash) => {
     throw conflict('Username già in uso', 'username');
   }
   const isFirst = db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0;
-  // a registrazioni chiuse resta aperta solo la creazione del primo utente
-  if (!config.registrationOpen && !isFirst) {
-    throw new HttpError(403, 'Le registrazioni sono chiuse');
+  const hasAdmin = db.prepare("SELECT 1 FROM users WHERE role = 'admin'").get() != null;
+  const isAdminName =
+    config.adminUsername != null && username.toLowerCase() === config.adminUsername.toLowerCase();
+  // a registrazioni chiuse resta aperta solo la creazione dell'admin: il primo utente, oppure
+  // (se ADMIN_USERNAME è impostato) chi si registra con quel nome finché non c'è un admin
+  if (!config.registrationOpen) {
+    const allowed = config.adminUsername ? isAdminName && !hasAdmin : isFirst;
+    if (!allowed) throw new HttpError(403, 'Le registrazioni sono chiuse');
   }
-  const isAdmin = config.adminUsername
-    ? username.toLowerCase() === config.adminUsername.toLowerCase()
-    : isFirst;
+  const isAdmin = config.adminUsername ? isAdminName : isFirst;
   const info = db
     .prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)')
     .run(username, hash, isAdmin ? 'admin' : 'member');

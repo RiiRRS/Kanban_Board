@@ -345,6 +345,10 @@ export function openTaskForm({
     .filter((t) => !excluded.has(t.id))
     .sort((a, b) => a.title.localeCompare(b.title))
     .map((t) => [String(t.id), `${truncate(t.title, 50)} (${columnName.get(t.columnId) ?? '?'})`]);
+  // un genitore in archivio non è nell'elenco: senza questa voce il salvataggio lo toglierebbe
+  if (initial.parentId && !parentOptions.some(([value]) => value === initial.parentId)) {
+    parentOptions.push([initial.parentId, 'Attività in archivio']);
+  }
   const parent = createSelect(
     'task-parent',
     [['', '— Nessuna —'], ...parentOptions],

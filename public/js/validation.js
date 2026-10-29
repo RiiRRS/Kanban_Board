@@ -26,6 +26,9 @@ export function validatePassword(password) {
   if (typeof password !== 'string' || password.length < LIMITS.passwordMin) {
     return 'La password deve avere almeno 8 caratteri';
   }
+  if (new TextEncoder().encode(password).length > LIMITS.passwordMaxBytes) {
+    return `La password può avere al massimo ${LIMITS.passwordMaxBytes} byte`;
+  }
   return null;
 }
 

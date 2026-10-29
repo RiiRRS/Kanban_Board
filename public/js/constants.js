@@ -31,6 +31,7 @@ export const LIMITS = {
   usernameMin: 3,
   usernameMax: 30,
   passwordMin: 8,
+  passwordMaxBytes: 72, // bcrypt ignora il resto
   displayNameMax: 40,
   titleMax: 100,
   descriptionMax: 5000,

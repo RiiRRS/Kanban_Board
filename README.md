@@ -214,18 +214,18 @@ campo `code` aggiuntivo: `time_conflict` (con l'elenco `conflicts`), `wip_limit`
 
 ## Configurazione
 
-| Variabile           | Predefinito          | Significato                                                           |
-| ------------------- | -------------------- | --------------------------------------------------------------------- |
-| `PORT`              | `3000`               | porta del server                                                      |
-| `DB_PATH`           | `data/kanban.db`     | percorso del file SQLite                                              |
-| `NODE_ENV`          | —                    | `production` attiva il cookie `Secure`                                |
-| `SECURE_COOKIES`    | `true` in produzione | cookie di sessione solo su HTTPS                                      |
-| `TRUST_PROXY`       | —                    | es. `1` se c'è nginx davanti (IP e protocollo corretti)               |
-| `REGISTRATION_OPEN` | `true`               | `false` chiude le registrazioni (resta solo il primo utente)          |
-| `ADMIN_USERNAME`    | —                    | chi si registra con questo username è admin (invece del primo utente) |
-| `SESSION_DAYS`      | `7`                  | durata della sessione                                                 |
-| `UPLOAD_DIR`        | accanto al database  | cartella dei file allegati (`data/uploads`)                           |
-| `AUTH_RATE_MAX`     | `20`                 | tentativi di login/registrazione ogni 15 minuti per IP                |
+| Variabile           | Predefinito          | Significato                                                                                                                            |
+| ------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`              | `3000`               | porta del server                                                                                                                       |
+| `DB_PATH`           | `data/kanban.db`     | percorso del file SQLite                                                                                                               |
+| `NODE_ENV`          | —                    | `production` attiva il cookie `Secure`                                                                                                 |
+| `SECURE_COOKIES`    | `true` in produzione | cookie di sessione solo su HTTPS                                                                                                       |
+| `TRUST_PROXY`       | —                    | es. `1` se c'è nginx davanti (IP e protocollo corretti)                                                                                |
+| `REGISTRATION_OPEN` | `true`               | `false` chiude le registrazioni (resta solo il primo utente)                                                                           |
+| `ADMIN_USERNAME`    | —                    | chi si registra con questo username è admin (invece del primo utente). Con le registrazioni aperte, registrati subito tu con quel nome |
+| `SESSION_DAYS`      | `7`                  | durata della sessione                                                                                                                  |
+| `UPLOAD_DIR`        | accanto al database  | cartella dei file allegati (`data/uploads`)                                                                                            |
+| `AUTH_RATE_MAX`     | `20`                 | tentativi di login/registrazione ogni 15 minuti per IP                                                                                 |
 
 ```bash
 PORT=8080 DB_PATH=/tmp/demo.db npm start

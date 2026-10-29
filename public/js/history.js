@@ -34,6 +34,8 @@ export function describeEvent(e) {
       return `ha commentato ${quote(d.title)}`;
     case 'attachment.added':
       return `ha allegato ${quote(d.name)} a ${quote(d.title)}`;
+    case 'attachment.removed':
+      return `ha rimosso ${quote(d.name)} da ${quote(d.title)}`;
     case 'board.created':
       return `ha creato la board ${quote(d.name)}`;
     case 'board.imported':
