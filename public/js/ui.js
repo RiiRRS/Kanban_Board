@@ -1,5 +1,7 @@
 // Notifiche (toast), finestre (modali) e finestra di conferma
 
+import { icon } from './icons.js';
+
 const TOAST_TYPES = ['info', 'success', 'error'];
 const MAX_TOASTS = 3;
 const FOCUSABLE = 'input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])';
@@ -29,7 +31,7 @@ export function showToast(message, type = 'info') {
   closeButton.className = 'btn btn--ghost btn--icon';
   closeButton.type = 'button';
   closeButton.setAttribute('aria-label', 'Chiudi notifica');
-  closeButton.textContent = '×';
+  closeButton.append(icon('x'));
 
   toast.append(text, closeButton);
   toastContainer.append(toast);
@@ -76,7 +78,7 @@ export function openModal(content, { title, onClose, size = 'md', beforeClose } 
   closeButton.className = 'modal__close btn btn--ghost btn--icon';
   closeButton.type = 'button';
   closeButton.setAttribute('aria-label', 'Chiudi');
-  closeButton.textContent = '×';
+  closeButton.append(icon('x'));
 
   const body = document.createElement('div');
   body.className = 'modal__body';

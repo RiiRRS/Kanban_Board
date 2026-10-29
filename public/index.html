@@ -29,7 +29,7 @@
             type="button"
             aria-label="Chiudi menu"
           >
-            ×
+            <span data-icon="x"></span>
           </button>
         </div>
 
@@ -39,11 +39,11 @@
           <select id="board-select" class="select sidebar__select"></select>
           <div class="sidebar__row">
             <button id="board-new" class="nav-item" type="button">
-              <span class="nav-item__icon" aria-hidden="true">+</span>
+              <span class="nav-item__icon" data-icon="plus"></span>
               <span class="nav-item__label">Nuova board</span>
             </button>
             <button id="board-settings" class="nav-item" type="button">
-              <span class="nav-item__icon" aria-hidden="true">⚙</span>
+              <span class="nav-item__icon" data-icon="settings"></span>
               <span class="nav-item__label">Impostazioni</span>
             </button>
           </div>
@@ -52,19 +52,19 @@
         <nav class="sidebar__section" aria-labelledby="views-heading">
           <h2 id="views-heading" class="sidebar__heading">Viste</h2>
           <button class="nav-item tab--active" type="button" data-view="board" aria-current="page">
-            <span class="nav-item__icon" aria-hidden="true">▥</span>
+            <span class="nav-item__icon" data-icon="board"></span>
             <span class="nav-item__label">Board</span>
           </button>
           <button class="nav-item" type="button" data-view="calendar" aria-current="false">
-            <span class="nav-item__icon" aria-hidden="true">▦</span>
+            <span class="nav-item__icon" data-icon="calendar"></span>
             <span class="nav-item__label">Calendario</span>
           </button>
           <button class="nav-item" type="button" data-view="dashboard" aria-current="false">
-            <span class="nav-item__icon" aria-hidden="true">▤</span>
+            <span class="nav-item__icon" data-icon="chart"></span>
             <span class="nav-item__label">Dashboard</span>
           </button>
           <button class="nav-item" type="button" data-view="activity" aria-current="false">
-            <span class="nav-item__icon" aria-hidden="true">≡</span>
+            <span class="nav-item__icon" data-icon="history"></span>
             <span class="nav-item__label">Attività recenti</span>
           </button>
         </nav>
@@ -72,12 +72,16 @@
         <div class="sidebar__footer">
           <div class="notif-wrap">
             <button id="notif-button" class="nav-item" type="button" aria-label="Notifiche">
-              <span class="nav-item__icon" aria-hidden="true">◔</span>
+              <span class="nav-item__icon" data-icon="bell"></span>
               <span class="nav-item__label">Notifiche</span>
               <span id="notif-badge" class="notif-badge" hidden>0</span>
             </button>
             <div id="notif-panel" class="notif-panel" hidden></div>
           </div>
+          <button id="a11y-button" class="nav-item" type="button">
+            <span class="nav-item__icon" data-icon="accessibility"></span>
+            <span class="nav-item__label">Accessibilità</span>
+          </button>
           <button id="theme-toggle" class="nav-item" type="button" aria-label="Attiva tema scuro">
             Tema scuro
           </button>
@@ -101,7 +105,7 @@
             aria-controls="sidebar"
             aria-expanded="false"
           >
-            ☰
+            <span data-icon="menu"></span>
           </button>
           <h1 id="board-title" class="toolbar__title">Kanban</h1>
           <div class="toolbar__search">
@@ -115,7 +119,7 @@
             />
           </div>
           <button id="new-task-button" class="btn btn--primary toolbar__new" type="button">
-            <span aria-hidden="true">+</span> <span class="toolbar__new-label">Nuova attività</span>
+            <span data-icon="plus"></span> <span class="toolbar__new-label">Nuova attività</span>
           </button>
           <div class="toolbar__filters">
             <div id="filters" class="filters"></div>

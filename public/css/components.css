@@ -12,8 +12,10 @@
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: transparent;
+  color: inherit;
   font-size: var(--text-sm);
   font-weight: 500;
+  text-decoration: none;
   white-space: nowrap;
   transition:
     background-color var(--transition),
@@ -193,6 +195,7 @@
   align-items: center;
   padding: 2px var(--space-2);
   border-radius: var(--radius-full);
+  gap: var(--space-1);
   background: var(--color-surface-2);
   color: var(--color-text-muted);
   font-size: var(--text-xs);
@@ -666,14 +669,30 @@ body.modal-open {
   font-weight: 600;
 }
 
+/* azione testuale: niente sottolineatura, uno sfondo leggero al passaggio */
 .detail__link {
-  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: -2px calc(-1 * var(--space-1));
+  padding: 2px var(--space-1);
   background: none;
   border: 0;
+  border-radius: var(--radius-sm);
   color: var(--color-accent);
+  font-weight: 500;
   text-align: left;
-  text-decoration: underline;
   overflow-wrap: anywhere;
+  transition: background-color var(--transition);
+}
+
+.detail__link:hover:not(:disabled) {
+  background: var(--color-surface-2);
+}
+
+.detail__link:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
 }
 
 .detail__children {

@@ -4,6 +4,7 @@ import { PRIORITY_LABELS } from './constants.js';
 import { formatShortDate, formatTimeRange, isOverdue, isToday } from './format.js';
 import { formatMinutes } from './validation.js';
 import { el, plural } from './dom.js';
+import { icon } from './icons.js';
 import { createAvatarStack } from './avatar.js';
 
 /* Menu "Sposta in..." */
@@ -106,7 +107,7 @@ function buildMenu(entries) {
 /* Card e colonne */
 
 // barra di avanzamento sottile con un'etichetta (es. "1/3")
-function progress(label, done, total, title) {
+function progress(iconName, label, done, total, title) {
   const wrap = el('div', 'progress');
   wrap.title = title;
   const bar = el('div', 'progress__bar');
@@ -114,7 +115,9 @@ function progress(label, done, total, title) {
   fill.style.width = `${total === 0 ? 0 : Math.round((done / total) * 100)}%`;
   if (done === total) fill.classList.add('progress__fill--complete');
   bar.append(fill);
-  wrap.append(el('span', 'progress__label', label), bar);
+  const text = el('span', 'progress__label');
+  text.append(icon(iconName), label);
+  wrap.append(text, bar);
   return wrap;
 }
 
@@ -144,7 +147,11 @@ function buildCard(task, byId, columns, { onOpenTask, onMoveTask, onArchiveTask,
   body.append(el('p', 'card__meta', `${shortDate} · ${range}`));
 
   const parent = task.parentId != null ? byId.get(task.parentId) : null;
-  if (parent) body.append(el('p', 'card__parent', `↑ ${parent.title}`));
+  if (parent) {
+    const line = el('p', 'card__parent');
+    line.append(icon('parent'), parent.title);
+    body.append(line);
+  }
 
   if (task.labels.length > 0) {
     const labels = el('div', 'card__labels');
@@ -159,7 +166,8 @@ function buildCard(task, byId, columns, { onOpenTask, onMoveTask, onArchiveTask,
   if (task.checklistTotal > 0) {
     body.append(
       progress(
-        `☑ ${task.checklistDone}/${task.checklistTotal}`,
+        'checklist',
+        `${task.checklistDone}/${task.checklistTotal}`,
         task.checklistDone,
         task.checklistTotal,
         `Checklist: ${task.checklistDone} voci su ${task.checklistTotal}`,
@@ -169,7 +177,8 @@ function buildCard(task, byId, columns, { onOpenTask, onMoveTask, onArchiveTask,
   if (task.childCount > 0) {
     body.append(
       progress(
-        `⤷ ${task.childDoneCount}/${task.childCount}`,
+        'subtasks',
+        `${task.childDoneCount}/${task.childCount}`,
         task.childDoneCount,
         task.childCount,
         `Sotto-attività: ${task.childDoneCount} completate su ${task.childCount}`,
@@ -183,16 +192,17 @@ function buildCard(task, byId, columns, { onOpenTask, onMoveTask, onArchiveTask,
   );
   if (overdue) badges.append(el('span', 'badge badge--danger', 'Scaduta'));
   if (task.recurrence !== 'none') {
-    const repeat = el('span', 'badge', '↻');
+    const repeat = el('span', 'badge');
+    repeat.append(icon('repeat'));
     repeat.title = 'Attività ricorrente';
     badges.append(repeat);
   }
   if (task.estimateMin != null || task.spentMin > 0) {
     const over = task.estimateMin != null && task.spentMin > task.estimateMin;
-    const time = el(
-      'span',
-      `badge${over ? ' badge--danger' : ''}`,
-      `⏱ ${formatMinutes(task.spentMin)}${task.estimateMin != null ? ` / ${formatMinutes(task.estimateMin)}` : ''}`,
+    const time = el('span', `badge${over ? ' badge--danger' : ''}`);
+    time.append(
+      icon('clock'),
+      `${formatMinutes(task.spentMin)}${task.estimateMin != null ? ` / ${formatMinutes(task.estimateMin)}` : ''}`,
     );
     time.title = over ? 'Tempo oltre la stima' : 'Tempo effettivo / stima';
     badges.append(time);
@@ -201,7 +211,10 @@ function buildCard(task, byId, columns, { onOpenTask, onMoveTask, onArchiveTask,
     badges.append(el('span', 'badge', plural(task.commentCount, 'commento', 'commenti')));
   }
   if (task.attachmentCount > 0) {
-    badges.append(el('span', 'badge', `📎 ${task.attachmentCount}`));
+    const files = el('span', 'badge');
+    files.append(icon('paperclip'), String(task.attachmentCount));
+    files.title = plural(task.attachmentCount, 'allegato', 'allegati');
+    badges.append(files);
   }
   body.append(badges);
 
@@ -211,7 +224,8 @@ function buildCard(task, byId, columns, { onOpenTask, onMoveTask, onArchiveTask,
     body.append(footer);
   }
 
-  const menuButton = el('button', 'card__menu-button btn btn--ghost btn--icon', '⋯');
+  const menuButton = el('button', 'card__menu-button btn btn--ghost btn--icon');
+  menuButton.append(icon('more'));
   menuButton.type = 'button';
   menuButton.draggable = false;
   menuButton.setAttribute('aria-label', 'Azioni');
@@ -298,7 +312,8 @@ function buildColumn(column, tasks, byId, columns, handlers) {
       archive.addEventListener('click', () => handlers.onArchiveDone?.());
       actions.append(archive);
     }
-    const add = el('button', 'column__add btn btn--ghost btn--icon', '+');
+    const add = el('button', 'column__add btn btn--ghost btn--icon');
+    add.append(icon('plus'));
     add.type = 'button';
     add.dataset.columnId = column.id;
     add.setAttribute('aria-label', `Aggiungi attività in ${column.name}`);

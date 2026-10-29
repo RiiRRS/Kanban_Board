@@ -1,4 +1,5 @@
 import { PREFS_KEY } from './constants.js';
+import { icon } from './icons.js';
 
 function readPrefs() {
   try {
@@ -30,7 +31,13 @@ export function setTheme(theme) {
 function updateButton() {
   if (!button) return;
   const dark = getTheme() === 'dark';
-  button.textContent = dark ? 'Tema chiaro' : 'Tema scuro';
+  const text = document.createElement('span');
+  text.className = 'nav-item__label';
+  text.textContent = dark ? 'Tema chiaro' : 'Tema scuro';
+  const symbol = document.createElement('span');
+  symbol.className = 'nav-item__icon';
+  symbol.append(icon(dark ? 'sun' : 'moon'));
+  button.replaceChildren(symbol, text);
   const label = dark ? 'Attiva tema chiaro' : 'Attiva tema scuro';
   button.setAttribute('aria-label', label);
   button.title = label;

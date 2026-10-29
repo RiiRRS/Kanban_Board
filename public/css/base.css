@@ -161,6 +161,29 @@ svg {
   max-width: 100%;
 }
 
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+/* icone SVG a tratto (icons.js): prendono colore e dimensione dal testo */
+.icon {
+  display: inline-block;
+  flex: none;
+  width: 1.125em;
+  height: 1.125em;
+  vertical-align: -0.2em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+[data-icon] {
+  display: inline-flex;
+}
+
 [hidden] {
   display: none !important;
 }
@@ -189,4 +212,57 @@ svg {
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
   }
+}
+
+/* ---- Preferenze di accessibilità (data-* su <html>, vedi accessibility.js) ---- */
+:root[data-text='large'] {
+  font-size: 112.5%;
+}
+
+:root[data-text='xlarge'] {
+  font-size: 125%;
+}
+
+:root[data-motion='reduced'] *,
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  transition-duration: 0ms !important;
+  animation-duration: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-focus='strong'] :focus-visible {
+  outline: 4px solid var(--color-focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 7px var(--color-surface);
+}
+
+:root[data-contrast='high'] {
+  --color-text: #000000;
+  --color-text-muted: #2b3330;
+  --color-border: #4a554f;
+  --color-accent: #0f4a43;
+  --color-focus: #0b3d37;
+  --color-danger: #8f2511;
+  --color-success: #1f5a37;
+  --color-warning: #7a4400;
+  --side-muted: #c4cdc8;
+}
+
+:root[data-theme='dark'][data-contrast='high'] {
+  --color-text: #ffffff;
+  --color-text-muted: #d5dcd7;
+  --color-border: #8a9690;
+  --color-accent: #8fe0d2;
+  --color-focus: #8fe0d2;
+  --color-danger: #ff9a85;
+  --color-success: #86e0ad;
+  --color-warning: #ffcc77;
+}
+
+:root[data-contrast='high'] .input,
+:root[data-contrast='high'] .select,
+:root[data-contrast='high'] .btn--secondary {
+  border-width: 2px;
+  border-color: var(--color-text);
 }

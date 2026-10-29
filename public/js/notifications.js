@@ -3,8 +3,9 @@
 import { getNotifications, markNotificationsRead } from './api.js';
 import { el, button } from './dom.js';
 import { formatRelative } from './format.js';
+import { icon } from './icons.js';
 
-const ICONS = { assigned: '👤', mention: '@', comment: '💬', due: '⏰' };
+const ICONS = { assigned: 'user', mention: 'at', comment: 'comment', due: 'clock' };
 
 export function initNotifications({ bell, badge, panel, onOpenTask }) {
   let items = [];
@@ -38,11 +39,11 @@ export function initNotifications({ bell, badge, panel, onOpenTask }) {
       const li = el('li');
       const row = el('button', `notif${n.read ? '' : ' notif--unread'}`);
       row.type = 'button';
-      const icon = el('span', 'notif__icon', ICONS[n.type] ?? '•');
-      icon.setAttribute('aria-hidden', 'true');
+      const symbol = el('span', 'notif__icon');
+      symbol.append(icon(ICONS[n.type] ?? 'bell'));
       const text = el('span', 'notif__text');
       text.append(el('span', null, n.text), el('span', 'notif__time', formatRelative(n.createdAt)));
-      row.append(icon, text);
+      row.append(symbol, text);
       row.addEventListener('click', async () => {
         close();
         if (!n.read) await markNotificationsRead([n.id]).catch(() => {});

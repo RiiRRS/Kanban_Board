@@ -3,6 +3,7 @@
 import { addLink, uploadFile, deleteAttachment } from './api.js';
 import { LIMITS } from './constants.js';
 import { el, button, spinner, errorMessage } from './dom.js';
+import { icon } from './icons.js';
 import { showToast, confirmDialog } from './ui.js';
 
 function formatSize(bytes) {
@@ -24,8 +25,8 @@ export function createAttachments({ taskId, items, canContribute, canDelete, onC
 
   function buildItem(att) {
     const li = el('li', 'attachment');
-    const icon = el('span', 'attachment__icon', att.kind === 'link' ? '🔗' : '📎');
-    icon.setAttribute('aria-hidden', 'true');
+    const symbol = el('span', 'attachment__icon');
+    symbol.append(icon(att.kind === 'link' ? 'link' : 'paperclip'));
 
     const a = el('a', 'attachment__name', att.name);
     a.href = att.url;
@@ -35,12 +36,12 @@ export function createAttachments({ taskId, items, canContribute, canDelete, onC
     } else {
       a.download = att.name; // il server risponde comunque come download
     }
-    li.append(icon, a);
+    li.append(symbol, a);
     if (att.kind === 'file') li.append(el('span', 'attachment__size', formatSize(att.size ?? 0)));
 
     // elimina chi ha caricato o chi può modificare l'attività
     if (canDelete(att)) {
-      const remove = button('×', 'btn btn--ghost btn--icon', async () => {
+      const remove = button(null, 'btn btn--ghost btn--icon', async () => {
         const ok = await confirmDialog(`Eliminare l'allegato "${att.name}"?`, {
           title: 'Elimina allegato',
           okLabel: 'Elimina',
@@ -59,6 +60,7 @@ export function createAttachments({ taskId, items, canContribute, canDelete, onC
           showToast(errorMessage(err), 'error');
         }
       });
+      remove.append(icon('x'));
       remove.setAttribute('aria-label', `Elimina l'allegato "${att.name}"`);
       li.append(remove);
     }

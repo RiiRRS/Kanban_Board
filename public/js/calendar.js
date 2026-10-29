@@ -2,6 +2,7 @@
 // anche qui: si vedono le stesse attività.
 
 import { el, button } from './dom.js';
+import { icon } from './icons.js';
 import { todayISO, addDays, startOfWeek } from './format.js';
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
@@ -72,7 +73,8 @@ function monthGrid(tasks, { onOpenTask, onAddTask }, rerender) {
 
     const head = el('div', 'cal-cell__head');
     head.append(el('span', 'cal-cell__day', String(Number(date.slice(8)))));
-    const add = button('+', 'btn btn--ghost btn--icon cal-cell__add', () => onAddTask?.(date));
+    const add = button(null, 'btn btn--ghost btn--icon cal-cell__add', () => onAddTask?.(date));
+    add.append(icon('plus'));
     add.setAttribute('aria-label', `Nuova attività il ${date}`);
     head.append(add);
     cell.append(head);
@@ -131,7 +133,8 @@ function weekTimeline(tasks, { onOpenTask, onAddTask }) {
     head.append(
       el('span', null, `${WEEKDAYS[i]} ${Number(date.slice(8))}`),
       (() => {
-        const add = button('+', 'btn btn--ghost btn--icon', () => onAddTask?.(date));
+        const add = button(null, 'btn btn--ghost btn--icon', () => onAddTask?.(date));
+        add.append(icon('plus'));
         add.setAttribute('aria-label', `Nuova attività il ${date}`);
         return add;
       })(),
@@ -168,18 +171,20 @@ export function renderCalendar(container, tasks, handlers) {
 
   const bar = el('div', 'calendar__bar');
   const nav = el('div', 'calendar__nav');
-  const prev = button('‹', 'btn btn--secondary btn--icon', () => {
+  const prev = button(null, 'btn btn--secondary btn--icon', () => {
     shift(-1);
     render();
   });
+  prev.append(icon('chevron-left'));
   prev.setAttribute(
     'aria-label',
     view.mode === 'month' ? 'Mese precedente' : 'Settimana precedente',
   );
-  const next = button('›', 'btn btn--secondary btn--icon', () => {
+  const next = button(null, 'btn btn--secondary btn--icon', () => {
     shift(1);
     render();
   });
+  next.append(icon('chevron-right'));
   next.setAttribute(
     'aria-label',
     view.mode === 'month' ? 'Mese successivo' : 'Settimana successiva',

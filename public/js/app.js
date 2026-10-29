@@ -22,6 +22,7 @@ import { initTheme, getTheme, setTheme } from './theme.js';
 import { openTaskForm } from './taskForm.js';
 import { openTaskDetail } from './taskDetail.js';
 import { openBoardSettings } from './manage.js';
+import { initAccessibility, openAccessibility } from './accessibility.js';
 import { openProfile } from './profile.js';
 import { initNotifications } from './notifications.js';
 import { renderCalendar } from './calendar.js';
@@ -34,6 +35,7 @@ import { withConfirmation, Cancelled } from './confirmFlow.js';
 import { createAvatar, nameOf } from './avatar.js';
 import { readPrefs, setPref } from './prefs.js';
 import { errorMessage } from './dom.js';
+import { hydrateIcons } from './icons.js';
 
 const state = {
   user: null,
@@ -57,7 +59,10 @@ let notifications = null;
 let renderToken = 0; // una vista che si carica in ritardo non deve sovrascrivere quella nuova
 
 async function main() {
+  hydrateIcons();
   initTheme($('theme-toggle'));
+  initAccessibility();
+  $('a11y-button').addEventListener('click', openAccessibility);
   state.user = await getMe();
   if (!state.user) return location.replace('login.html');
 

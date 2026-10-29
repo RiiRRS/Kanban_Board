@@ -12,6 +12,7 @@ import { createAttachments } from './attachments.js';
 import { createComments } from './comments.js';
 import { createTaskHistory } from './history.js';
 import { el, button, spinner, errorMessage } from './dom.js';
+import { icon } from './icons.js';
 import { openModal, showToast, confirmDialog } from './ui.js';
 
 function createSection(title) {
@@ -21,9 +22,11 @@ function createSection(title) {
   return { section, heading };
 }
 
-// bottone che sembra un link
-function createLink(text, onClick) {
-  const link = el('button', 'detail__link', text);
+// bottone testuale, con un'icona opzionale davanti
+function createLink(text, onClick, iconName) {
+  const link = el('button', 'detail__link');
+  if (iconName) link.append(icon(iconName));
+  link.append(text);
   link.type = 'button';
   link.addEventListener('click', onClick);
   return link;
@@ -74,7 +77,9 @@ export function openTaskDetail({
   if (isOverdue(task)) badges.append(el('span', 'badge badge--danger', 'Scaduta'));
   if (task.archivedAt) badges.append(el('span', 'badge', 'Archiviata'));
   if (task.recurrence !== 'none') {
-    badges.append(el('span', 'badge', `↻ ${RECURRENCE_LABELS[task.recurrence]}`));
+    const repeat = el('span', 'badge');
+    repeat.append(icon('repeat'), RECURRENCE_LABELS[task.recurrence]);
+    badges.append(repeat);
   }
 
   const meta = el('dl', 'detail__meta');
@@ -190,8 +195,9 @@ export function openTaskDetail({
     for (const child of children) {
       childrenList.append(
         createLink(
-          `${child.isDone ? '✓ ' : ''}${child.title} · ${columnName.get(child.columnId) ?? ''}`,
+          `${child.title} · ${columnName.get(child.columnId) ?? ''}`,
           () => openOther(child.id),
+          child.isDone ? 'check' : null,
         ),
       );
     }

@@ -3,6 +3,7 @@
 import { addChecklistItem, updateChecklistItem, deleteChecklistItem } from './api.js';
 import { LIMITS } from './constants.js';
 import { el, button, errorMessage } from './dom.js';
+import { icon } from './icons.js';
 import { showToast } from './ui.js';
 
 // items: voci già caricate; canContribute: può modificarle; onChange: avvisa chi ha aperto la finestra
@@ -59,7 +60,7 @@ export function createChecklist({ taskId, items, canContribute, onChange }) {
     li.append(box, text);
 
     if (canContribute) {
-      const remove = button('×', 'btn btn--ghost btn--icon', async () => {
+      const remove = button(null, 'btn btn--ghost btn--icon', async () => {
         remove.disabled = true;
         try {
           await deleteChecklistItem(taskId, item.id);
@@ -72,6 +73,7 @@ export function createChecklist({ taskId, items, canContribute, onChange }) {
           showToast(errorMessage(err), 'error');
         }
       });
+      remove.append(icon('x'));
       remove.setAttribute('aria-label', `Elimina la voce "${item.text}"`);
       li.append(remove);
     }

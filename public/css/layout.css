@@ -128,10 +128,11 @@
 }
 
 .nav-item__icon {
+  display: inline-flex;
   flex: 0 0 18px;
+  justify-content: center;
   font-size: var(--text-md);
   line-height: 1;
-  text-align: center;
   color: var(--side-muted);
 }
 
@@ -164,14 +165,6 @@
 
 .nav-item.tab--active .nav-item__icon {
   color: var(--color-primary);
-}
-
-/* theme.js riscrive il testo del bottone: l'icona sta nello pseudo-elemento */
-#theme-toggle::before {
-  content: '◐';
-  flex: 0 0 18px;
-  text-align: center;
-  color: var(--side-muted);
 }
 
 .sidebar__footer {
@@ -551,6 +544,10 @@
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   color: var(--color-text-muted);
+}
+
+.card__parent .icon {
+  margin-right: var(--space-1);
 }
 
 .card__parent {

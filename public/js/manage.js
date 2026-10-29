@@ -18,6 +18,7 @@ import {
 } from './api.js';
 import { LIMITS, TASK_COLORS } from './constants.js';
 import { el, button, errorMessage } from './dom.js';
+import { icon } from './icons.js';
 import { openModal, showToast, confirmDialog } from './ui.js';
 
 function section(title, hint) {
@@ -150,10 +151,12 @@ export function openBoardSettings({
       row.append(colName, wip, doneLabel);
 
       if (canManage) {
-        const up = button('↑', 'btn btn--ghost btn--icon', () => move(index, -1));
+        const up = button(null, 'btn btn--ghost btn--icon', () => move(index, -1));
+        up.append(icon('arrow-left'));
         up.setAttribute('aria-label', `Sposta ${column.name} a sinistra`);
         up.disabled = index === 0;
-        const down = button('↓', 'btn btn--ghost btn--icon', () => move(index, 1));
+        const down = button(null, 'btn btn--ghost btn--icon', () => move(index, 1));
+        down.append(icon('arrow-right'));
         down.setAttribute('aria-label', `Sposta ${column.name} a destra`);
         down.disabled = index === current.columns.length - 1;
         const save = button('Salva', 'btn btn--secondary', () =>
