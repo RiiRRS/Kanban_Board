@@ -1,0 +1,27 @@
+name: Richiesta di funzionalità
+description: Proponi una nuova funzionalità o un miglioramento
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Problema
+      description: Quale esigenza o difficoltà risolverebbe?
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Soluzione proposta
+      description: Come dovrebbe funzionare?
+    validations:
+      required: true
+  - type: textarea
+    id: alternative
+    attributes:
+      label: Alternative considerate
+  - type: textarea
+    id: extra
+    attributes:
+      label: Altre informazioni
+      description: Mockup, esempi da altri strumenti, ecc.

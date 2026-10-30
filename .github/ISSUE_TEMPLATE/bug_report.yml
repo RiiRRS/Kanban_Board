@@ -1,0 +1,45 @@
+name: Segnalazione bug
+description: Qualcosa non funziona come dovrebbe
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie della segnalazione! Le vulnerabilità di sicurezza vanno invece segnalate in privato, come indicato in SECURITY.md.
+  - type: textarea
+    id: descrizione
+    attributes:
+      label: Descrizione
+      description: Cosa succede?
+    validations:
+      required: true
+  - type: textarea
+    id: passi
+    attributes:
+      label: Passi per riprodurre
+      placeholder: |
+        1. Apri la board "..."
+        2. Trascina la card "..." nella colonna "..."
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: atteso
+    attributes:
+      label: Comportamento atteso
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser e sistema operativo
+      placeholder: es. Firefox 132 su Windows 11
+  - type: input
+    id: node
+    attributes:
+      label: Versione di Node.js
+      placeholder: es. 22.11.0
+  - type: textarea
+    id: extra
+    attributes:
+      label: Log, screenshot o altre informazioni

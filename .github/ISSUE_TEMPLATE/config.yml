@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Segnala una vulnerabilità
+    url: https://github.com/RiiRRS/Kanban_Board/security/advisories/new
+    about: Le vulnerabilità vanno segnalate in privato, non con issue pubbliche.
